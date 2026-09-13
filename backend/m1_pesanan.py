@@ -1,4 +1,5 @@
 class Pesanan:
+    # Pake slots supaya hemat RAM
     __slots__ = (
         'oid',
         'pelanggan',
@@ -11,6 +12,11 @@ class Pesanan:
         'status'
     )
 
+    # harga diubah ke int supaya bisa dibandingin, kalau kosong diisi 0
+    # prioritas diubah ke int supaya bisa dibandingin, kalau kosong diisi 3
+    # t_masuk_detik diubah ke int supaya bisa dibandingin, kalau kosong diisi 0
+    # t_selesai_detik diubah ke int supaya bisa dibandingin, kalau kosong diisi None
+    # status diubah ke string
     def __init__(self, oid, pelanggan, resto, menu, harga, prioritas, t_masuk_detik, t_selesai_detik, status):
         self.oid = str(oid)
         self.pelanggan = str(pelanggan)
@@ -22,9 +28,11 @@ class Pesanan:
         self.t_selesai_detik = int(t_selesai_detik) if t_selesai_detik != "" and t_selesai_detik is not None else None
         self.status = str(status)
 
+    # helper method supaya data enak dibaca saat diprint
     def ringkasan(self):
         return f"[{self.oid}] {self.pelanggan} | {self.resto} - {self.menu} | Rp{self.harga:,} | Prio:{self.prioritas} |Status:{self.status}"
 
+    # representasi objek supaya enak dibaca
     def __repr__(self):
-        return f"<Pesanan {self.old} ({self.pelanggan})>"
+        return f"<Pesanan {self.oid} ({self.pelanggan})>"
     
