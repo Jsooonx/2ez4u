@@ -36,3 +36,53 @@ class Pesanan:
     def __repr__(self):
         return f"<Pesanan {self.oid} ({self.pelanggan})>"
     
+class Array:
+    def __init__(self, capacity=4):
+        # kapasitas awal minimal 4
+        self.capacity = capacity if capacity > 0 else 4
+        self.size = 0
+        # alokasi memori array
+        self.data = [None] * self.capacity
+
+    def __len__(self):
+        # memungkkinkan utk memanggil len(array_objek)
+        return self.size
+
+    def _resize(self, new_capacity):
+        """
+        Menggandakan alokasi memori array dan menyalin data lama secara manual.
+        Kompleksitas: O(n) saat resize terjadi.
+        """
+        new_data = [None] * new_capacity
+        # salin elemen dari array lama ke array baru
+        for i in range(self.size):
+            new_data[i] = self.data[i]
+
+        # ganti array lama dengan yang baru
+        self.data = new_data
+        self.capacity = new_capacity
+
+    def append(self,v):
+        """
+        Menambahkan pesanan REGULER di posisi paling belakang antrean.
+        Kompleksitas: O(1) amortized.
+        """
+
+        # jika kapasitas penuh, gandakan kapasitasnya x2
+        if self.size == self.capacity:
+            self._resize(self.capacity * 2)
+
+        self.data[self.size] = v
+        self.size += 1
+
+    def get(self, i):
+        """
+        Melihat pesanan ke-i secara instan via indeks memori.
+        Kompleksitas: O(1).
+        """
+        # validasi batas indeks
+        if i < 0 or i >= self.size:
+            raise IndexError(f"Indeks {i} di luar batas (ukuran array: {self.size})")
+        return self.data[i]
+
+    
