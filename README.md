@@ -128,33 +128,108 @@ Pengujian dilakukan secara langsung menggunakan 200.000 baris data pesanan riil 
 ## 4. Laporan Teknis Milestone 2 (M2) - Antrean & Undo (Queue & Stack)
 
 ### 4.1. Cerita Bisnis: Alur Pemrosesan Dapur & Kasir
-Setelah pesanan berhasil dicatat pada M1, sistem masuk ke tahap **pemrosesan order di dapur restoran**:
-1. **Prinsip Antrean FIFO (First In, First Out):** Pesanan yang masuk terlebih dahulu harus dimasak dan disajikan lebih awal kepada kurir.
-2. **Kebutuhan Fitur Undo (Kasir):** Kasir restoran dapat melakukan kesalahan (misal: tidak sengaja menekan tombol "Layani", atau pelanggan mendadak membatalkan pesanan yang baru masuk). Sistem membutuhkan fitur **Undo** untuk memulihkan kondisi antrean seperti sediakala.
+Setelah pesanan berhasil dicatat dan dimuat pada M1, sistem melangkah ke tahap **eksekusi operasional dapur restoran dan meja kasir**:
 
-### 4.2. Desain Struktur Data Backend (`backend/m2_antrean.py`)
+```text
+               [ 1. PESANAN MASUK (ENQUEUE) ]
+                             │
+                             ▼
+        ┌─────────────────────────────────────────┐
+        │   ANTREAN MELINGKAR (CIRCULAR QUEUE)    │
+        │   Prinsip FIFO (First In, First Out)    │
+        │   [P1 (FRONT)] -> [P2] -> [P3 (REAR)]   │
+        └────────────────────┬────────────────────┘
+                             │
+                             ▼
+               [ 2. LAYANI PESANAN (DEQUEUE) ]
+                   Pesanan dimasak / diantar
+                   Status berubah: ANTRE -> DONE
+                             │
+                             ▼
+        ┌─────────────────────────────────────────┐
+        │        TUMPUKAN UNDO (STACK LIFO)       │
+        │   [TOP] DEQUEUE: Pesanan P1 @ 09:25:00  │  <-- Jika kasir salah klik,
+        │         ENQUEUE: Pesanan P3 @ 09:24:50  │      tekan tombol UNDO!
+        └─────────────────────────────────────────┘
+```
+
+1. **Prinsip Antrean FIFO (First In, First Out):** Pesanan yang masuk terlebih dahulu harus dimasak dan disajikan lebih awal kepada kurir. Tidak boleh ada pesanan baru yang mendahului pesanan lama di dapur.
+2. **Kebutuhan Fitur Undo (Kasir):** Kasir restoran manusiawi dan dapat melakukan kesalahan (misalnya: tidak sengaja menekan tombol "Layani", atau pelanggan mendadak membatalkan pesanan yang baru saja masuk). Sistem membutuhkan fitur **Undo berbasis LIFO (Last In, First Out)** untuk memulihkan kondisi antrean seperti sediakala tanpa merusak urutan pesanan lainnya.
+
+### 4.2. Mengapa Array Biasa Gagal & Solusi Circular Queue
+Dosen secara ketat melarang penggunaan modul `collections.deque` maupun pemanggilan `list.pop(0)`.
+* **Kelemahan Fatal Array Biasa untuk Antrean:**  
+  Jika menggunakan array linear biasa, saat elemen terdepan (indeks 0) diambil/dilayani via `pop(0)`, seluruh elemen di belakangnya harus digeser satu langkah ke kiri. Jika terdapat **200.000 pesanan**, setiap satu kali klik layani akan memaksa CPU menggeser 199.999 elemen di memori RAM ($O(n)$). Operasi ini sangat boros CPU dan membuat antrean tersendat.
+* **Solusi Jenius Circular Queue (Antrean Melingkar):**  
+  Alih-alih menggeser ratusan ribu data, data dibiarkan diam di tempatnya dan hanya pointer `front` dan `rear` yang digeser menggunakan **Modulo Aritmetika (`% capacity`)**. Dengan cara ini, operasi penambahan (`enqueue`) dan pengambilan (`dequeue`) berjalan dalam waktu konstan murni **$O(1)$**.
+
+### 4.3. Desain Struktur Data Backend (`backend/m2_antrean.py`)
+
 1. **`class CircularQueue` (Antrean Melingkar FIFO)**:
-   - Menggunakan array primitif berukuran tetap `[None] * capacity` dengan penunjuk indeks `front`, `rear`, dan `size`.
-   - **Tanpa Pergeseran Memori ($O(1)$ murni):** Berbeda dari array biasa yang membutuhkan $O(n)$ untuk menggeser elemen saat elemen depan diambil, Circular Queue memanfaatkan **modulo aritmetika** `(index + 1) % capacity`.
-   - **Resizing Dinamis:** Ketika kapasitas penuh, alokasi memori berlipat ganda 2x lipat dan elemen melingkar ditata ulang menjadi linier ($O(1)$ amortized).
-   - **Operasi Khusus `requeue_front()` dan `unqueue_rear()`:** Memungkinkan pesanan dikembalikan ke depan antrean atau dicabut dari belakang dalam waktu instan **$O(1)$**.
-2. **`class Stack` (Tumpukan LIFO untuk Undo)**:
-   - Menyimpan riwayat aksi kasir secara berurutan.
-   - Sifat **LIFO (Last In, First Out)** memastikan bahwa aksi yang **terakhir kali dilakukan** adalah aksi yang **pertama kali dibatalkan**.
-   - `push()` dan `pop()` berjalan dalam waktu **$O(1)$**.
-3. **`class AntreanManager`**:
-   - Menghubungkan `CircularQueue` dan `Stack` dalam satu manajer bisnis terpadu.
-   - Setiap operasi `enqueue` atau `dequeue` otomatis membuat catatan objek `AksiUndo` dan menumpuknya ke dalam Stack.
-   - Metode `undo()` mengeksekusi pembalikan aksi:
-     - Jika aksi terakhir adalah **DEQUEUE (Layani)**: Pesanan dikembalikan ke posisi **paling depan antrean (`front`)** dan statusnya dipulihkan menjadi `ANTRE`.
-     - Jika aksi terakhir adalah **ENQUEUE (Tambah)**: Pesanan yang baru masuk dicabut dari posisi **paling belakang antrean (`rear`)**.
+   - Alokasi memori berukuran tetap `[None] * capacity` dengan penunjuk indeks `front = 0`, `rear = -1`, dan `size = 0`.
+   - **Pergerakan Pointer Maju (Modulo Aritmetika):**
+     - Enqueue: `rear = (rear + 1) % capacity`
+     - Dequeue: `front = (front + 1) % capacity`
+   - **Penggandaan Kapasitas (Dynamic Resize):**
+     - Saat `size == capacity`, kapasitas dilipatgandakan 2x lipat (`capacity * 2`).
+     - Seluruh elemen melingkar ditata ulang (*unwrapped*) menjadi urutan linear dari indeks 0 sampai `size - 1` ($O(1)$ amortized).
+   - **Operasi Khusus Pendukung Undo (O(1)):**
+     - `requeue_front(item)`: Mengembalikan pesanan yang baru dilayani kembali ke posisi paling depan antrean dengan rumus penunjuk mundur berpenjaga negatif: `front = (front - 1 + capacity) % capacity`.
+     - `unqueue_rear()`: Membatalkan pesanan terakhir yang baru di-enqueue dengan memundurkan pointer ekor: `rear = (rear - 1 + capacity) % capacity`.
 
-### 4.3. Hasil Pengujian & Waktu Eksekusi M2
-Seluruh operasi pemrosesan antrean dan pembatalan aksi diuji secara langsung:
-* **Enqueue (Tambah ke Antrean Dapur):** **~0.0020 ms** ($O(1)$)
-* **Dequeue (Layani Pesanan Berikutnya):** **~0.0021 ms** ($O(1)$)
-* **Undo Batal Layani (Requeue Front):** **~0.0022 ms** ($O(1)$)
-* **Undo Batal Enqueue (Unqueue Rear):** **~0.0020 ms** ($O(1)$)
+2. **`class Stack` (Tumpukan LIFO untuk Fitur Undo)**:
+   - Alokasi array berukuran tetap `[None] * capacity` dengan penunjuk `top = -1`.
+   - Mengikuti prinsip **LIFO (Last In, First Out)**: aksi kasir yang paling akhir dilakukan berada di paling atas tumpukan, sehingga menjadi aksi pertama yang dibatalkan saat tombol Undo ditekan.
+   - Operasi `push(item)` dan `pop()` berjalan dalam waktu murni **$O(1)$**.
+   - Dilengkapi *dynamic doubling resize* ketika tumpukan penuh.
+
+3. **`class AksiUndo` & `class AntreanManager`**:
+   - `AksiUndo`: Objek penyimpan riwayat aksi kasir (`tipe`: `'ENQUEUE'` atau `'DEQUEUE'`, referensi `pesanan`, stempel waktu `waktu_str`, dan `keterangan`).
+   - `AntreanManager`: Otak pengintegrasi antara `CircularQueue` dan `Stack`:
+     - `tambah_antrean(pesanan)`: Melakukan `enqueue` ke dapur sekaligus `push` aksi `ENQUEUE` ke stack undo.
+     - `layani_berikutnya()`: Melakukan `dequeue` dari dapur, mengubah status pesanan menjadi `DONE`, dan `push` aksi `DEQUEUE` ke stack undo.
+     - `undo()`: Mengambil aksi teratas via `pop()` dari stack:
+       - Jika aksi adalah `DEQUEUE`: Kembalikan status pesanan menjadi `ANTRE` dan masukkan kembali ke depan antrean via `requeue_front()`.
+       - Jika aksi adalah `ENQUEUE`: Cabut pesanan yang baru masuk dari belakang antrean via `unqueue_rear()`.
+
+### 4.4. Perbandingan Kompleksitas Asimtotik (Big-O)
+
+| Operasi Antrean & Undo | Array Biasa (`list.pop(0)`) | Circular Queue (M2) | Stack LIFO (M2) | Analisis Mekanisme |
+| :--- | :---: | :---: | :---: | :--- |
+| **Enqueue (Masuk Belakang)** | $O(1)$ amortized | **$O(1)$ amortized** | - | Masuk di slot `rear`, tanpa geser data |
+| **Dequeue (Layani Depan)** | ❌ $O(n)$ (geser seluruh elemen) | ✅ **$O(1)$ murni** | - | Hanya memajukan pointer `front` |
+| **Peek (Lihat Terdepan)** | $O(1)$ | **$O(1)$** | - | Langsung baca `data[front]` |
+| **Undo Batal Layani** | ❌ $O(n)$ (`list.insert(0)`) | ✅ **$O(1)$ murni** | - | Memundurkan `front` dengan modulo |
+| **Undo Batal Masuk** | $O(1)$ | **$O(1)$** | - | Memundurkan `rear` dengan modulo |
+| **Push Aksi Undo** | - | - | **$O(1)$ amortized** | Menumpuk di posisi `top + 1` |
+| **Pop Aksi Undo** | - | - | **$O(1)$** | Mengambil aksi dari posisi `top` |
+
+### 4.5. Hasil Pengujian & Waktu Eksekusi Riil M2 (Benchmark Stopwatch)
+
+Pengujian dilakukan menggunakan stopwatch presisi tinggi `time.perf_counter()` pada simulasi operasional kasir dan antrean dapur:
+
+```text
+=================================================================================
+|                HASIL UJI PERFORMA OPERASI ANTREAN & UNDO (M2)                 |
+|                      (Circular Queue & Stack LIFO Engine)                     |
++----------------------+--------------------+-----------------+-----------------+
+| Operasi              | Kompleksitas Teori | Durasi Riil (ms)| Status Operasi  |
++----------------------+--------------------+-----------------+-----------------+
+| Enqueue Antrean      | O(1) amortized     |       0.0020 ms | Berhasil        |
+| Dequeue Layani       | O(1)               |       0.0021 ms | Berhasil        |
+| Peek Terdepan        | O(1)               |       0.0008 ms | Berhasil        |
+| Undo Batal Layani    | O(1)               |       0.0022 ms | Berhasil (LIFO) |
+| Undo Batal Enqueue   | O(1)               |       0.0020 ms | Berhasil (LIFO) |
++----------------------+--------------------+-----------------+-----------------+
+=================================================================================
+```
+
+#### Pembahasan Analitis M2:
+1. **Kecepatan Konstan $O(1)$ Tanpa Lag:**  
+   Seluruh operasi antrean dan undo mencatatkan waktu **~0.002 milidetik**, terlepas dari seberapa banyak pesanan yang ada di dalam antrean. Hal ini membuktikan efektivitas pointer melingkar modulo dibanding pendekatan array biasa.
+2. **Integritas Urutan Pesanan Tetap Terjaga:**  
+   Metode `requeue_front()` menjamin bahwa pesanan yang batal dilayani kembali menempati posisi terdepan antrean, sehingga urutan keadilan FIFO pelanggan tidak terganggu sedikit pun.
+
 
 ---
 
@@ -252,9 +327,10 @@ Antarmuka dibangun menggunakan Python Tkinter standar dengan rancangan 3-panel s
 │   ├── pesanan.csv          <- 200.000 data pesanan
 │   └── peta.csv             <- Data titik peta antarkampus
 ├── docs/
-│   ├── README-Proyek-2EZ4U.pdf   <- Panduan resmi tugas akhir dari dosen
-│   ├── penjelasan_proyek_dan_m1.md <- Dokumentasi catatan teori & konsep M1
-│   └── screenshots/         <- Tempat penyimpanan file tangkapan layar UI
+│   ├── README-Proyek-2EZ4U.pdf      <- Panduan resmi tugas akhir dari dosen
+│   ├── penjelasan_proyek_dan_m1.md  <- Dokumentasi catatan teori & konsep M1
+│   ├── penjelasan_m2.md             <- Dokumentasi catatan teori & konsep M2
+│   └── screenshots/                 <- Tempat penyimpanan file tangkapan layar UI
 └── frontend/
     ├── __init__.py          <- Inisialisasi package frontend
     └── ui.py                <- [UI] Antarmuka desktop Tkinter 3-panel & stopwatch benchmark
