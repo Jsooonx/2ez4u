@@ -12,11 +12,7 @@ class Pesanan:
         'status'
     )
 
-    # harga diubah ke int supaya bisa dibandingin, kalau kosong diisi 0
-    # prioritas diubah ke int supaya bisa dibandingin, kalau kosong diisi 3
-    # t_masuk_detik diubah ke int supaya bisa dibandingin, kalau kosong diisi 0
-    # t_selesai_detik diubah ke int supaya bisa dibandingin, kalau kosong diisi None
-    # status diubah ke string
+    # Inisialisasi atribut pesanan
     def __init__(self, oid, pelanggan, resto, menu, harga, prioritas, t_masuk_detik, t_selesai_detik, status):
         self.oid = str(oid)
         self.pelanggan = str(pelanggan)
@@ -28,47 +24,35 @@ class Pesanan:
         self.t_selesai_detik = int(t_selesai_detik) if t_selesai_detik != "" and t_selesai_detik is not None else None
         self.status = str(status)
 
-    # helper method supaya data enak dibaca saat diprint
+    # Format ringkas untuk tampilan teks / terminal
     def ringkasan(self):
         return f"[{self.oid}] {self.pelanggan} | {self.resto} - {self.menu} | Rp{self.harga:,} | Prio:{self.prioritas} |Status:{self.status}"
 
-    # representasi objek supaya enak dibaca
     def __repr__(self):
         return f"<Pesanan {self.oid} ({self.pelanggan})>"
     
+
 class Array:
+    # Dynamic Array primitif dengan penggandaan kapasitas
     def __init__(self, capacity=4):
-        # kapasitas awal minimal 4
         self.capacity = capacity if capacity > 0 else 4
         self.size = 0
-        # alokasi memori array
         self.data = [None] * self.capacity
 
     def __len__(self):
-        # memungkkinkan utk memanggil len(array_objek)
         return self.size
 
     def _resize(self, new_capacity):
-        """
-        Menggandakan alokasi memori array dan menyalin data lama secara manual.
-        Kompleksitas: O(n) saat resize terjadi.
-        """
+        # Gandakan kapasitas array dan salin data lama
         new_data = [None] * new_capacity
-        # salin elemen dari array lama ke array baru
         for i in range(self.size):
             new_data[i] = self.data[i]
 
-        # ganti array lama dengan yang baru
         self.data = new_data
         self.capacity = new_capacity
 
-    def append(self,v):
-        """
-        Menambahkan pesanan REGULER di posisi paling belakang antrean.
-        Kompleksitas: O(1) amortized.
-        """
-
-        # jika kapasitas penuh, gandakan kapasitasnya x2
+    def append(self, v):
+        # Tambah pesanan di posisi paling belakang
         if self.size == self.capacity:
             self._resize(self.capacity * 2)
 
@@ -76,62 +60,50 @@ class Array:
         self.size += 1
 
     def get(self, i):
-        """
-        Melihat pesanan ke-i secara instan via indeks memori.
-        Kompleksitas: O(1).
-        """
-        # validasi batas indeks
+        # Ambil pesanan berdasarkan indeks langsung
         if i < 0 or i >= self.size:
             raise IndexError(f"Indeks {i} di luar batas (ukuran array: {self.size})")
         return self.data[i]
 
     def insert(self, i, v):
-        """menyimpan pesanan pada indeks ke-i
-        - VIP (i = 0): O(n)
-        - PRIORITAS (i = size // 2): O(n)
-        """
+        # Sisipkan pesanan pada indeks ke-i (geser elemen ke kanan)
         if i < 0 or i > self.size:
             raise IndexError(f"Indeks penyisipan di luar batas: {i} (size:{self.size})")
 
-        #jika kapasitas penuh, gandakan kapasitas
         if self.size == self.capacity:
             self._resize(self.capacity * 2)
 
         for k in range(self.size, i, -1):
             self.data[k] = self.data[k - 1]
 
-        #letakkan elemen baru di slot indeks i
         self.data[i] = v
         self.size += 1
 
     def delete(self, i):
-        """
-        Menghapus pesanan pada indeks ke-i dan menggeser elemen kanan ke kiri.
-        Kompleksitas: O(n).
-        """
+        # Hapus pesanan pada indeks ke-i dan geser sisa elemen ke kiri
         if i < 0 or i >= self.size:
             raise IndexError(f"Indeks di luar batas: {i} (size: {self.size})")
 
         deleted_item = self.data[i]
-
-        #geser elemen di sebelah kanan indeks i satu langkah ke kiri
         for k in range(i, self.size - 1):
             self.data[k] = self.data[k + 1]
 
-        #kosongkan slot terakhir dan kurangi ukuran
         self.data[self.size - 1] = None
         self.size -= 1
         return deleted_item
 
+
 class Node:
-    """Simpul tunggal untuk Linked List"""
+    # Simpul singly linked list
     __slots__ = ('val', 'next')
 
     def __init__(self, val, next=None):
         self.val = val
         self.next = next
 
+
 class LinkList:
+    # Singly Linked List dengan pointer head dan tail
     def __init__(self):
         self.head = None
         self.tail = None
@@ -141,10 +113,7 @@ class LinkList:
         return self.size
 
     def append(self, v):
-        """
-        Menambahkan pesanan REGULER di paling belakang barisan.
-        Kompleksitas: O(1) menggunakan self.tail.
-        """
+        # Tambah pesanan di ujung rantai lewat tail
         new_node = Node(v)
         if self.head is None:
             self.head = new_node
@@ -155,10 +124,7 @@ class LinkList:
         self.size += 1
 
     def insert_front(self, v):
-        """
-        Menambahkan pesanan VIP di urutan terdepan (indeks 0).
-        Kompleksitas: O(1) langsung memperbarui self.head.
-        """
+        # Tambah pesanan di urutan paling depan (head)
         new_node = Node(v, next=self.head)
         self.head = new_node
         if self.tail is None:
@@ -166,12 +132,7 @@ class LinkList:
         self.size += 1
 
     def insert(self, i, v):
-        """
-        Menyisipkan pesanan pada posisi ke-i.
-        - Jika i == 0 (VIP) -> O(1) via insert_front.
-        - Jika i == size (REGULER) -> O(1) via append.
-        - Jika i di tengah (PRIORITAS di size // 2) -> O(n) traversal ke simpul (i - 1).
-        """
+        # Sisipkan pesanan pada urutan ke-i
         if i < 0 or i > self.size:
             raise IndexError(f"Indeks penyisipan di luar batas: {i} (size: {self.size})")
 
@@ -193,14 +154,10 @@ class LinkList:
         self.size += 1
 
     def get(self, i):
-        """
-        Melihat pesanan ke-i dengan menelusuri rantai dari head.
-        Kompleksitas: O(n).
-        """
+        # Ambil pesanan ke-i dengan traversal dari head
         if i < 0 or i >= self.size:
             raise IndexError(f"Indeks di luar batas: {i} (size: {self.size})")
 
-        # Shortcut jika elemen terakhir
         if i == self.size - 1 and self.tail is not None:
             return self.tail.val
 
@@ -210,14 +167,10 @@ class LinkList:
         return curr.val
 
     def delete(self, i):
-        """
-        Menghapus pesanan pada simpul ke-i.
-        Kompleksitas: O(n) traversal ke simpul (i - 1).
-        """
+        # Hapus pesanan pada urutan ke-i
         if i < 0 or i >= self.size:
             raise IndexError(f"Indeks di luar batas: {i} (size: {self.size})")
 
-        # Kasus khusus: hapus elemen pertama (head)
         if i == 0:
             deleted_val = self.head.val
             self.head = self.head.next
@@ -226,7 +179,6 @@ class LinkList:
             self.size -= 1
             return deleted_val
 
-        # Traversal ke simpul sebelum i
         curr = self.head
         for _ in range(i - 1):
             curr = curr.next
@@ -234,7 +186,6 @@ class LinkList:
         deleted_val = curr.next.val
         curr.next = curr.next.next
 
-        # Jika yang dihapus adalah tail, update pointer tail ke curr
         if i == self.size - 1:
             self.tail = curr
 
@@ -243,10 +194,7 @@ class LinkList:
 
 
 def muat_pesanan_csv(filepath, limit=None):
-    """
-    Membaca data dari CSV pesanan dan memuatnya ke Array dan LinkList sekaligus.
-    Mengembalikan (arr, ll, durasi_detik, jumlah_baris).
-    """
+    # Baca file CSV pesanan dan masukkan ke Array & LinkList
     import csv
     import time
 
@@ -258,7 +206,7 @@ def muat_pesanan_csv(filepath, limit=None):
 
     with open(filepath, mode='r', encoding='utf-8', newline='') as f:
         reader = csv.reader(f)
-        header = next(reader, None)  # lewati header
+        header = next(reader, None)
 
         for row in reader:
             if not row or len(row) < 9:
@@ -284,4 +232,4 @@ def muat_pesanan_csv(filepath, limit=None):
 
     t_selesai = time.perf_counter()
     durasi = t_selesai - t_mulai
-    return arr, ll, durasi, count
+    return arr, ll, durasi, count

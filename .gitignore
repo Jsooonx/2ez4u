@@ -25,9 +25,11 @@ ENV/
 Thumbs.db
 desktop.ini
 
-# Docs folder (abaikan semua kecuali file README)
+# Docs folder (abaikan semua kecuali file README dan screenshots)
 docs/*
 !docs/README*
+!docs/screenshots/
+!docs/screenshots/*
 
 # Data folder
 data/

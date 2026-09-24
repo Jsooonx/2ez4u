@@ -13,6 +13,7 @@ from tkinter import messagebox, ttk
 from tkinter.scrolledtext import ScrolledText
 
 from backend.m1_pesanan import Array, LinkList, Pesanan, muat_pesanan_csv
+from backend.m2_antrean import AntreanManager, CircularQueue, Stack, AksiUndo
 
 
 class AppUI:
@@ -22,12 +23,15 @@ class AppUI:
         self.root.geometry("1100x720")
         self.root.minsize(960, 640)
 
-        # State data
+        # State data M1
         self.array_pesanan = Array(capacity=8)
         self.linklist_pesanan = LinkList()
         self.data_loaded = False
         self.total_loaded = 0
         self.csv_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data", "pesanan.csv")
+
+        # State data M2 (Antrean Melingkar FIFO & Tumpukan Undo)
+        self.antrean_mgr = AntreanManager()
 
         # Konfigurasi Tema & Style
         self._setup_styles()
@@ -144,11 +148,12 @@ class AppUI:
         )
         btn_duel.pack(fill=tk.X, padx=10, pady=(10, 10))
 
-        # UPCOMING MILESTONES (Placeholder sesuai panduan PDF halaman 4)
-        self._add_section_header(scrollable_content, "M2 - ANTREAN DAN UNDO (Segera)")
-        self._add_placeholder_btn(scrollable_content, "Antrean FIFO (Circular)")
-        self._add_placeholder_btn(scrollable_content, "Layani Berikutnya")
-        self._add_placeholder_btn(scrollable_content, "Undo Aksi")
+        # SECTION: M2 - ANTREAN DAN UNDO
+        self._add_section_header(scrollable_content, "M2 - ANTREAN DAN UNDO")
+        self._add_menu_btn(scrollable_content, "M2 - STATUS ANTREAN FIFO", lambda: self.set_mode("M2_STATUS"))
+        self._add_menu_btn(scrollable_content, "M2 - ENQUEUE (Masuk Dapur)", lambda: self.set_mode("M2_ENQUEUE"))
+        self._add_menu_btn(scrollable_content, "M2 - LAYANI BERIKUTNYA", self.action_m2_dequeue)
+        self._add_menu_btn(scrollable_content, "M2 - UNDO AKSI TERAKHIR", self.action_m2_undo)
 
         self._add_section_header(scrollable_content, "M3 & M4 - SORT & HASH (Segera)")
         self._add_placeholder_btn(scrollable_content, "Laporan Terurut")
@@ -337,6 +342,45 @@ class AppUI:
 
             self.current_prio_val = int(prio_val)
 
+        elif mode == "M2_STATUS":
+            self.lbl_action_title.config(text="M2 - STATUS ANTREAN FIFO (Circular Queue)")
+            self.lbl_action_desc.config(
+                text="Melihat kondisi antrean dapur terkini (Front, Rear, Kapasitas) dan riwayat Stack Undo."
+            )
+            self.btn_execute.config(text="🔄 REFRESH STATUS ANTREAN", bg=self.colors["accent_blue"])
+            lbl_info = tk.Label(
+                self.form_fields_container,
+                text="Klik tombol di samping untuk menyegarkan visualisasi antrean melingkar & tumpukan undo.",
+                bg="white", font=("Segoe UI", 9, "italic"), fg="#475569"
+            )
+            lbl_info.pack(anchor="w", pady=4)
+            self._render_m2_queue_status()
+
+        elif mode == "M2_ENQUEUE":
+            self.lbl_action_title.config(text="M2 - TAMBAH KE ANTREAN (Enqueue FIFO)")
+            self.lbl_action_desc.config(
+                text="Memasukkan pesanan ke antrean dapur. Menambah di belakang antrean dalam O(1)."
+            )
+            self.btn_execute.config(text="📥 ENQUEUE KE DAPUR", bg=self.colors["accent_green"])
+
+            tk.Label(self.form_fields_container, text="Pilih dari Data Pesanan (Indeks):", bg="white", font=("Segoe UI", 9, "bold")).grid(row=0, column=0, sticky="w", pady=2)
+            self.entry_m2_idx = ttk.Entry(self.form_fields_container, width=15)
+            self.entry_m2_idx.insert(0, str(len(self.antrean_mgr.queue)))
+            self.entry_m2_idx.grid(row=0, column=1, sticky="w", padx=8, pady=2)
+
+            tk.Label(self.form_fields_container, text="— ATAU Input Pesanan Baru —", bg="white", font=("Segoe UI", 8, "italic"), fg="#64748b").grid(row=1, column=0, columnspan=2, sticky="w", pady=(6, 2))
+
+            labels = ["Nama Pelanggan:", "Restoran:", "Menu:", "Harga (Rp):"]
+            defaults = ["Bambang", "bakso-pak-yon", "Bakso Campur Super", "25000"]
+            self.entries_m2 = []
+
+            for i, (label_text, default_val) in enumerate(zip(labels, defaults)):
+                tk.Label(self.form_fields_container, text=label_text, bg="white", font=("Segoe UI", 9)).grid(row=i + 2, column=0, sticky="w", pady=2)
+                ent = ttk.Entry(self.form_fields_container, width=32)
+                ent.insert(0, default_val)
+                ent.grid(row=i + 2, column=1, sticky="w", padx=8, pady=2)
+                self.entries_m2.append(ent)
+
     # -------------------------------------------------------------
     # EKSEKUSI AKSI & BENCHMARKING
     # -------------------------------------------------------------
@@ -359,6 +403,17 @@ class AppUI:
                 fg="#16a34a"
             )
             self.log_command(f"LOAD CSV ({total:,} baris dimuat ke Array & LinkList)", durasi_ms)
+
+            # Inisialisasi antrean dapur M2 dengan 10 pesanan pertama dari CSV jika masih kosong
+            if self.antrean_mgr.queue.is_empty():
+                for k in range(min(10, len(self.array_pesanan))):
+                    p_seed = self.array_pesanan.get(k)
+                    p_copy = Pesanan(
+                        oid=p_seed.oid, pelanggan=p_seed.pelanggan, resto=p_seed.resto,
+                        menu=p_seed.menu, harga=p_seed.harga, prioritas=p_seed.prioritas,
+                        t_masuk_detik=p_seed.t_masuk_detik, t_selesai_detik=None, status="ANTRE"
+                    )
+                    self.antrean_mgr.queue.enqueue(p_copy)
 
             # Tampilkan info pesanan awal & akhir di result text
             p_first = self.array_pesanan.get(0)
@@ -494,6 +549,46 @@ class AppUI:
                 self.txt_result.delete("1.0", tk.END)
                 self.txt_result.insert(tk.END, res)
 
+            # 4. M2 - STATUS ANTREAN FIFO
+            elif mode == "M2_STATUS":
+                self._render_m2_queue_status()
+
+            # 5. M2 - ENQUEUE (Masuk Dapur)
+            elif mode == "M2_ENQUEUE":
+                idx_str = self.entry_m2_idx.get().strip()
+                use_existing = False
+                pesanan_to_add = None
+
+                if idx_str.isdigit() and self.data_loaded:
+                    idx = int(idx_str)
+                    if 0 <= idx < len(self.array_pesanan):
+                        p_orig = self.array_pesanan.get(idx)
+                        pesanan_to_add = Pesanan(
+                            oid=p_orig.oid, pelanggan=p_orig.pelanggan, resto=p_orig.resto,
+                            menu=p_orig.menu, harga=p_orig.harga, prioritas=p_orig.prioritas,
+                            t_masuk_detik=p_orig.t_masuk_detik, t_selesai_detik=None, status="ANTRE"
+                        )
+                        use_existing = True
+
+                if not use_existing:
+                    pelanggan = self.entries_m2[0].get().strip() or "Anonim"
+                    resto = self.entries_m2[1].get().strip() or "Resto"
+                    menu = self.entries_m2[2].get().strip() or "Menu"
+                    harga = int(self.entries_m2[3].get().strip() or 0)
+                    new_oid = f"O-Q-{len(self.antrean_mgr.queue) + 1}"
+                    pesanan_to_add = Pesanan(
+                        oid=new_oid, pelanggan=pelanggan, resto=resto, menu=menu,
+                        harga=harga, prioritas=3, t_masuk_detik=int(time.time()) % 86400,
+                        t_selesai_detik=None, status="ANTRE"
+                    )
+
+                t0 = time.perf_counter()
+                self.antrean_mgr.tambah_antrean(pesanan_to_add)
+                durasi_ms = (time.perf_counter() - t0) * 1000
+
+                self.log_command(f"M2 - Enqueue Antrean Dapur: {pesanan_to_add.oid}", durasi_ms)
+                self._render_m2_queue_status(pesan_tambahan=f"Pesanan {pesanan_to_add.oid} ({pesanan_to_add.pelanggan}) berhasil dimasukkan ke antrean dapur ({durasi_ms:.4f} ms).")
+
         except IndexError as e:
             messagebox.showerror("Indeks Tidak Valid", str(e))
         except ValueError:
@@ -594,6 +689,106 @@ class AppUI:
             "   seluruh elemen memori ke kanan."
         ]
         report = "\n".join(report_lines)
+        self.txt_result.delete("1.0", tk.END)
+        self.txt_result.insert(tk.END, report)
+
+    # -------------------------------------------------------------
+    # AKSI MILESTONE 2: ANTREAN (CIRCULAR QUEUE) & FITUR UNDO (STACK)
+    # -------------------------------------------------------------
+    def action_m2_dequeue(self):
+        if self.antrean_mgr.queue.is_empty():
+            messagebox.showinfo("Antrean Kosong", "Tidak ada pesanan di antrean dapur untuk dilayani.")
+            return
+
+        t0 = time.perf_counter()
+        pesanan = self.antrean_mgr.layani_berikutnya()
+        durasi_ms = (time.perf_counter() - t0) * 1000
+
+        self.log_command(f"M2 - Layani Berikutnya (Dequeue): {pesanan.oid} -> DONE", durasi_ms)
+        self._render_m2_queue_status(
+            pesan_tambahan=f"PESANAN SELESAI DILAYANI:\n  {pesanan.ringkasan()} ({durasi_ms:.4f} ms)\n[Tips: Klik 'M2 - UNDO AKSI TERAKHIR' jika ingin membatalkan/mengembalikan ke antrean]"
+        )
+
+    def action_m2_undo(self):
+        if self.antrean_mgr.undo_stack.is_empty():
+            messagebox.showinfo("Undo Kosong", "Tidak ada riwayat aksi yang bisa di-undo.")
+            return
+
+        t0 = time.perf_counter()
+        hasil = self.antrean_mgr.undo()
+        durasi_ms = (time.perf_counter() - t0) * 1000
+
+        if hasil is None:
+            return
+
+        tipe_undo, pesanan, aksi_asli = hasil
+        if tipe_undo == "BATAL_LAYANI":
+            msg = (
+                f"UNDO BERHASIL (Batal Layani / Dequeue):\n"
+                f"  Pesanan {pesanan.oid} dikembalikan ke URUTAN TERDEPAN antrean (Status: ANTRE) dalam {durasi_ms:.4f} ms."
+            )
+            self.log_command(f"M2 - UNDO: Batal Layani {pesanan.oid} (Kembali ke depan antrean)", durasi_ms)
+        else:
+            msg = (
+                f"UNDO BERHASIL (Batal Enqueue):\n"
+                f"  Pesanan {pesanan.oid} dicabut dari antrean dapur dalam {durasi_ms:.4f} ms."
+            )
+            self.log_command(f"M2 - UNDO: Batal Enqueue {pesanan.oid}", durasi_ms)
+
+        self._render_m2_queue_status(pesan_tambahan=msg)
+
+    def _render_m2_queue_status(self, pesan_tambahan=None):
+        q = self.antrean_mgr.queue
+        st = self.antrean_mgr.undo_stack
+        orders = q.to_list()
+        undo_list = st.to_list()
+
+        w = 81
+        sep = "+" + "-" * (w - 2) + "+"
+        d_sep = "=" * w
+        inner_w = w - 4
+
+        def box_line(content):
+            return f"| {content:<{inner_w}} |"
+
+        title = "STATUS ANTREAN DAPUR (CIRCULAR QUEUE FIFO)"
+        lines = [
+            d_sep,
+            "|" + title.center(w - 2) + "|",
+            sep,
+            box_line(f"Kapasitas Memori : {q.capacity} slot (Alokasi Array Primitif Berukuran Tetap)"),
+            box_line(f"Jumlah Antrean   : {q.size} pesanan aktif yang sedang menunggu giliran"),
+            box_line(f"Pointer FRONT    : Indeks {q.front} (Pesanan terdepan yang siap dimasak)"),
+            box_line(f"Pointer REAR     : Indeks {q.rear} (Pesanan terakhir yang baru masuk)"),
+            box_line(f"Tumpukan Undo    : {len(st)} aksi tersimpan di Stack (LIFO)"),
+            sep,
+            d_sep,
+            ""
+        ]
+
+        if pesan_tambahan:
+            lines.append(f">>> NOTIFIKASI AKSI TERAKHIR:\n{pesan_tambahan}\n")
+
+        lines.append(f"--- DAFTAR ANTREAN SIAP DIMASAK (Urutan Terdepan -> Terbelakang) [Total: {len(orders)}] ---")
+        if not orders:
+            lines.append("  (Antrean dapur kosong. Klik 'M2 - ENQUEUE' untuk menambahkan pesanan!)")
+        else:
+            for idx, p in enumerate(orders):
+                tag = " [SIAP DILAYANI (FRONT)]" if idx == 0 else ""
+                lines.append(f"  {idx + 1:2d}. {p.ringkasan()}{tag}")
+
+        lines.append("")
+        lines.append(f"--- RIWAYAT TUMPUKAN UNDO (Stack LIFO - Teratas = Paling Baru) [Total: {len(undo_list)}] ---")
+        if not undo_list:
+            lines.append("  (Tumpukan undo kosong. Belum ada aksi yang dicatat.)")
+        else:
+            for idx, aksi in enumerate(undo_list[:8]):
+                tag = " [TOP / AKSI TERAKHIR]" if idx == 0 else ""
+                lines.append(f"  {idx + 1:2d}. [{aksi.waktu_str}] {aksi.tipe}: {aksi.keterangan}{tag}")
+            if len(undo_list) > 8:
+                lines.append(f"      ... dan {len(undo_list) - 8} aksi sebelumnya tersimpan di bawah tumpukan.")
+
+        report = "\n".join(lines)
         self.txt_result.delete("1.0", tk.END)
         self.txt_result.insert(tk.END, report)
 
