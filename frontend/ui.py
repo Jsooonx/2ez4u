@@ -561,25 +561,39 @@ class AppUI:
         self.log_command(f"TAMBAH VIP -> Array: {t_vip_arr:.4f} ms | LL: {t_vip_ll:.4f} ms")
 
         # Tampilkan tabel perbandingan di Result
-        report = (
-            f"╔══════════════════════════════════════════════════════════════════════╗\n"
-            f"║          HASIL UJI TANDING PERFORMA: ARRAY vs LINKED LIST            ║\n"
-            f"║                 (Ukuran Data: {n:,} baris pesanan)                   ║\n"
-            f"╠══════════════════╦═══════════════╦═══════════════╦═══════════════════╣\n"
-            f"║ Operasi          ║ Array         ║ Linked List   ║ Pemenang          ║\n"
-            f"╠══════════════════╬═══════════════╬═══════════════╬═══════════════════╣\n"
-            f"║ Lihat (Indeks n/2)║ {t_get_arr:9.4f} ms ║ {t_get_ll:9.4f} ms ║ Array (O(1))      ║\n"
-            f"║ Tambah REGULER   ║ {t_reg_arr:9.4f} ms ║ {t_reg_ll:9.4f} ms ║ Imbang (O(1))     ║\n"
-            f"║ Tambah PRIORITAS ║ {t_prio_arr:9.4f} ms ║ {t_prio_ll:9.4f} ms ║ Relatif Seimbang  ║\n"
-            f"║ Tambah VIP       ║ {t_vip_arr:9.4f} ms ║ {t_vip_ll:9.4f} ms ║ Linked List (O(1))║\n"
-            f"╚══════════════════╩═══════════════╩═══════════════╩═══════════════════╝\n\n"
-            f"Analisa Hasil:\n"
-            f"1. Lihat Pesanan: Array O(1) direct indexing jauh lebih cepat dari LL O(n) traversal.\n"
-            f"2. Tambah REGULER: Keduanya O(1). Array amortized O(1), LL O(1) berkat pointer tail.\n"
-            f"3. Tambah PRIORITAS: Array menggeser n/2 elemen, LL menelusuri n/2 simpul.\n"
-            f"4. Tambah VIP: Linked List O(1) telak mengalahkan Array O(n) yang harus menggeser\n"
-            f"   seluruh elemen memori ke kanan.\n"
-        )
+        w1, w2, w3, w4 = 20, 14, 14, 20
+        sep = "+" + "-" * (w1 + 2) + "+" + "-" * (w2 + 2) + "+" + "-" * (w3 + 2) + "+" + "-" * (w4 + 2) + "+"
+        total_len = len(sep)
+        d_sep = "=" * total_len
+
+        def row(c1, c2, c3, c4):
+            return f"| {c1:<{w1}} | {c2:>{w2}} | {c3:>{w3}} | {c4:<{w4}} |"
+
+        title = "HASIL UJI TANDING PERFORMA: ARRAY vs LINKED LIST"
+        subtitle = f"(Ukuran Data: {n:,} baris pesanan)"
+
+        report_lines = [
+            d_sep,
+            "|" + title.center(total_len - 2) + "|",
+            "|" + subtitle.center(total_len - 2) + "|",
+            sep,
+            row("Operasi", "Array", "Linked List", "Pemenang"),
+            sep,
+            row("Lihat (Indeks n/2)", f"{t_get_arr:.4f} ms", f"{t_get_ll:.4f} ms", "Array (O(1))"),
+            row("Tambah REGULER", f"{t_reg_arr:.4f} ms", f"{t_reg_ll:.4f} ms", "Imbang (O(1))"),
+            row("Tambah PRIORITAS", f"{t_prio_arr:.4f} ms", f"{t_prio_ll:.4f} ms", "Relatif Seimbang"),
+            row("Tambah VIP", f"{t_vip_arr:.4f} ms", f"{t_vip_ll:.4f} ms", "Linked List (O(1))"),
+            sep,
+            d_sep,
+            "",
+            "Analisa Hasil:",
+            "1. Lihat Pesanan: Array O(1) direct indexing jauh lebih cepat dari LL O(n) traversal.",
+            "2. Tambah REGULER: Keduanya O(1). Array amortized O(1), LL O(1) berkat pointer tail.",
+            "3. Tambah PRIORITAS: Array menggeser n/2 elemen, LL menelusuri n/2 simpul.",
+            "4. Tambah VIP: Linked List O(1) telak mengalahkan Array O(n) yang harus menggeser",
+            "   seluruh elemen memori ke kanan."
+        ]
+        report = "\n".join(report_lines)
         self.txt_result.delete("1.0", tk.END)
         self.txt_result.insert(tk.END, report)
 
