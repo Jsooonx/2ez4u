@@ -29,6 +29,9 @@ desktop.ini
 docs/*
 !docs/README*
 
+# Data folder
+data/
+
 # Temporary & logs
 *.log
 *.tmp
