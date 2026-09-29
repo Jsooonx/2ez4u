@@ -14,6 +14,7 @@ from tkinter.scrolledtext import ScrolledText
 
 from backend.m1_pesanan import Array, LinkList, Pesanan, muat_pesanan_csv
 from backend.m2_antrean import AntreanManager, CircularQueue, Stack, AksiUndo
+from backend.m3_laporan import LaporanManager, insertion_sort, selection_sort, bubble_sort, binary_search, linear_search
 
 
 class AppUI:
@@ -32,6 +33,9 @@ class AppUI:
 
         # State data M2 (Antrean Melingkar FIFO & Tumpukan Undo)
         self.antrean_mgr = AntreanManager()
+
+        # State data M3 (Laporan Terurut & Binary Search)
+        self.laporan_mgr = LaporanManager()
 
         # Konfigurasi Tema & Style
         self._setup_styles()
@@ -155,9 +159,19 @@ class AppUI:
         self._add_menu_btn(scrollable_content, "M2 - LAYANI BERIKUTNYA", self.action_m2_dequeue)
         self._add_menu_btn(scrollable_content, "M2 - UNDO AKSI TERAKHIR", self.action_m2_undo)
 
-        self._add_section_header(scrollable_content, "M3 & M4 - SORT & HASH (Segera)")
-        self._add_placeholder_btn(scrollable_content, "Laporan Terurut")
-        self._add_placeholder_btn(scrollable_content, "Cari di Laporan")
+        self._add_section_header(scrollable_content, "M3 - LAPORAN & SORTING")
+        self._add_menu_btn(scrollable_content, "M3 - LAPORAN TERURUT (Sort)", lambda: self.set_mode("M3_SORT"))
+        self._add_menu_btn(scrollable_content, "M3 - CARI DI LAPORAN (Binary Search)", lambda: self.set_mode("M3_SEARCH"))
+        btn_m3_duel = tk.Button(
+            scrollable_content, text="⚡ DUEL SORTING (M3)", bg="#8b5cf6", fg="white",
+            font=("Segoe UI", 9, "bold"), relief=tk.FLAT, pady=4, cursor="hand2",
+            command=self.action_m3_duel_sort
+        )
+        btn_m3_duel.pack(fill=tk.X, padx=10, pady=(4, 6))
+
+        self._add_section_header(scrollable_content, "M4 - PENCARIAN & HASH (Segera)")
+        self._add_placeholder_btn(scrollable_content, "Bangun Indeks Hash")
+        self._add_placeholder_btn(scrollable_content, "Cari Pesanan (OID)")
 
         self._add_section_header(scrollable_content, "M5 - KATALOG & HEAP (Segera)")
         self._add_placeholder_btn(scrollable_content, "Menu Rentang Harga (BST)")
@@ -381,6 +395,53 @@ class AppUI:
                 ent.grid(row=i + 2, column=1, sticky="w", padx=8, pady=2)
                 self.entries_m2.append(ent)
 
+        elif mode == "M3_SORT":
+            self.lbl_action_title.config(text="M3 - LAPORAN TERURUT (Insertion / Selection / Bubble Sort)")
+            self.lbl_action_desc.config(
+                text="Membuat laporan harian terurut berdasarkan Harga atau Waktu transaksi (O(n²) in-place)."
+            )
+            self.btn_execute.config(text="📊 PROSES PENGURUTAN LAPORAN", bg="#7c3aed")
+
+            tk.Label(self.form_fields_container, text="Jumlah Data (Limit):", bg="white", font=("Segoe UI", 9)).grid(row=0, column=0, sticky="w", pady=2)
+            self.combo_m3_limit = ttk.Combobox(self.form_fields_container, values=["100", "300", "500", "1000", "2000", "5000"], width=20, state="readonly")
+            self.combo_m3_limit.set("500")
+            self.combo_m3_limit.grid(row=0, column=1, sticky="w", padx=8, pady=2)
+
+            tk.Label(self.form_fields_container, text="Urutkan Berdasarkan:", bg="white", font=("Segoe UI", 9)).grid(row=1, column=0, sticky="w", pady=2)
+            self.combo_m3_key = ttk.Combobox(self.form_fields_container, values=["Harga (Termurah -> Termahal)", "Waktu Masuk (Pagi -> Malam)"], width=20, state="readonly")
+            self.combo_m3_key.set("Harga (Termurah -> Termahal)")
+            self.combo_m3_key.grid(row=1, column=1, sticky="w", padx=8, pady=2)
+
+            tk.Label(self.form_fields_container, text="Algoritma Sorting:", bg="white", font=("Segoe UI", 9)).grid(row=2, column=0, sticky="w", pady=2)
+            self.combo_m3_algo = ttk.Combobox(self.form_fields_container, values=["Insertion Sort (Utama)", "Selection Sort", "Bubble Sort"], width=20, state="readonly")
+            self.combo_m3_algo.set("Insertion Sort (Utama)")
+            self.combo_m3_algo.grid(row=2, column=1, sticky="w", padx=8, pady=2)
+
+            tk.Label(self.form_fields_container, text="Filter Status Pesanan:", bg="white", font=("Segoe UI", 9)).grid(row=3, column=0, sticky="w", pady=2)
+            self.combo_m3_status = ttk.Combobox(self.form_fields_container, values=["Semua Status", "DONE", "CANCEL", "ANTRE"], width=20, state="readonly")
+            self.combo_m3_status.set("Semua Status")
+            self.combo_m3_status.grid(row=3, column=1, sticky="w", padx=8, pady=2)
+
+        elif mode == "M3_SEARCH":
+            self.lbl_action_title.config(text="M3 - CARI DI LAPORAN (Binary Search O(log n))")
+            self.lbl_action_desc.config(
+                text="Mencari pesanan pada laporan yang sudah terurut. Membandingkan efisiensi Binary Search vs Linear Search."
+            )
+            self.btn_execute.config(text="🔍 CARI DENGAN BINARY SEARCH", bg="#0284c7")
+
+            tk.Label(self.form_fields_container, text="Nilai Target yang Dicari:", bg="white", font=("Segoe UI", 9, "bold")).grid(row=0, column=0, sticky="w", pady=2)
+            self.entry_m3_target = ttk.Entry(self.form_fields_container, width=22)
+            self.entry_m3_target.insert(0, "15000")
+            self.entry_m3_target.grid(row=0, column=1, sticky="w", padx=8, pady=2)
+
+            status_laporan = f"Laporan saat ini: {len(self.laporan_mgr.data_laporan):,} data (Kunci: {self.laporan_mgr.kunci_terakhir or 'Belum ada'})"
+            lbl_info = tk.Label(
+                self.form_fields_container,
+                text=status_laporan + "\n*Jika laporan belum dibuat, sistem otomatis mengurutkan 500 data terlebih dahulu.",
+                bg="white", font=("Segoe UI", 8, "italic"), fg="#475569"
+            )
+            lbl_info.grid(row=1, column=0, columnspan=2, sticky="w", pady=(4, 2))
+
     # -------------------------------------------------------------
     # EKSEKUSI AKSI & BENCHMARKING
     # -------------------------------------------------------------
@@ -589,6 +650,47 @@ class AppUI:
                 self.log_command(f"M2 - Enqueue Antrean Dapur: {pesanan_to_add.oid}", durasi_ms)
                 self._render_m2_queue_status(pesan_tambahan=f"Pesanan {pesanan_to_add.oid} ({pesanan_to_add.pelanggan}) berhasil dimasukkan ke antrean dapur ({durasi_ms:.4f} ms).")
 
+            # 6. M3 - LAPORAN TERURUT (SORT)
+            elif mode == "M3_SORT":
+                limit = int(self.combo_m3_limit.get())
+                kunci_raw = self.combo_m3_key.get()
+                sort_by = "waktu" if "Waktu" in kunci_raw else "harga"
+
+                algo_raw = self.combo_m3_algo.get()
+                if "Selection" in algo_raw:
+                    algoritma = "selection"
+                    nama_algo = "Selection Sort"
+                elif "Bubble" in algo_raw:
+                    algoritma = "bubble"
+                    nama_algo = "Bubble Sort"
+                else:
+                    algoritma = "insertion"
+                    nama_algo = "Insertion Sort"
+
+                st_raw = self.combo_m3_status.get()
+                st_filter = None if "Semua" in st_raw else st_raw
+
+                data, durasi_ms = self.laporan_mgr.buat_laporan(
+                    self.array_pesanan, limit=limit, sort_by=sort_by,
+                    algoritma=algoritma, status_filter=st_filter
+                )
+
+                self.log_command(f"M3 - {nama_algo} ({len(data)} pesanan by {sort_by})", durasi_ms)
+                self._render_m3_report(nama_algo, sort_by, durasi_ms)
+
+            # 7. M3 - CARI DI LAPORAN (BINARY SEARCH)
+            elif mode == "M3_SEARCH":
+                if not self.laporan_mgr.data_laporan:
+                    self.laporan_mgr.buat_laporan(self.array_pesanan, limit=500, sort_by="harga", algoritma="insertion")
+
+                target_val = int(self.entry_m3_target.get().strip())
+                res_search = self.laporan_mgr.cari_laporan(target_val)
+                self.log_command(
+                    f"M3 - Binary Search ({self.laporan_mgr.kunci_terakhir} = {target_val:,})",
+                    res_search["durasi_bs_ms"]
+                )
+                self._render_m3_search_result(target_val, res_search)
+
         except IndexError as e:
             messagebox.showerror("Indeks Tidak Valid", str(e))
         except ValueError:
@@ -791,6 +893,143 @@ class AppUI:
         report = "\n".join(lines)
         self.txt_result.delete("1.0", tk.END)
         self.txt_result.insert(tk.END, report)
+
+    def _render_m3_report(self, nama_algo, sort_by, durasi_ms):
+        w = 81
+        sep = "+" + "-" * (w - 2) + "+"
+        d_sep = "=" * w
+        inner_w = w - 4
+
+        def box_line(content):
+            return f"| {content:<{inner_w}} |"
+
+        daftar = self.laporan_mgr.data_laporan
+        n = len(daftar)
+        title = f"LAPORAN HARIAN TERURUT ({nama_algo.upper()})"
+        kunci_str = "Nominal Harga (Rp)" if sort_by == "harga" else "Waktu Transaksi (Detik Masuk)"
+
+        lines = [
+            d_sep,
+            "|" + title.center(w - 2) + "|",
+            sep,
+            box_line(f"Algoritma Digunakan: {nama_algo} (Kompleksitas Asimtotik: O(n^2))"),
+            box_line(f"Kunci Pengurutan   : {kunci_str}"),
+            box_line(f"Jumlah Sampel Data : {n:,} pesanan transaksi"),
+            box_line(f"Waktu Eksekusi     : {durasi_ms:.4f} ms"),
+            sep,
+            box_line("STATISTIK FINANSIAL LAPORAN:"),
+            box_line(f"  * Total Omset    : Rp{self.laporan_mgr.total_omset:,}"),
+            box_line(f"  * Rata-rata      : Rp{self.laporan_mgr.rata_rata_harga:,}"),
+            box_line(f"  * Harga Minimum  : Rp{self.laporan_mgr.min_harga:,}"),
+            box_line(f"  * Harga Maksimum : Rp{self.laporan_mgr.max_harga:,}"),
+            sep,
+            d_sep,
+            ""
+        ]
+
+        lines.append("--- 10 DATA PERTAMA (TERENDAH / PALING AWAL) ---")
+        for i in range(min(10, n)):
+            lines.append(f"  {i + 1:2d}. {daftar[i].ringkasan()}")
+
+        if n > 15:
+            lines.append("")
+            lines.append(f"      ... [terdapat {n - 15} data lainnya yang terurut sempurna] ...")
+            lines.append("")
+            lines.append("--- 5 DATA TERAKHIR (TERTINGGI / PALING AKHIR) ---")
+            for i in range(max(10, n - 5), n):
+                lines.append(f"  {i + 1:2d}. {daftar[i].ringkasan()}")
+
+        report = "\n".join(lines)
+        self.txt_result.delete("1.0", tk.END)
+        self.txt_result.insert(tk.END, report)
+
+    def _render_m3_search_result(self, target_val, res):
+        w = 81
+        sep = "+" + "-" * (w - 2) + "+"
+        d_sep = "=" * w
+        inner_w = w - 4
+
+        def box_line(content):
+            return f"| {content:<{inner_w}} |"
+
+        kunci_nama = "Harga Rp" if self.laporan_mgr.kunci_terakhir == "harga" else "Waktu Masuk detik ke-"
+        title = "HASIL PENCARIAN LAPORAN: BINARY SEARCH vs LINEAR SEARCH"
+        found = res["found_idx"] != -1
+
+        lines = [
+            d_sep,
+            "|" + title.center(w - 2) + "|",
+            sep,
+            box_line(f"Target Pencarian   : {kunci_nama}{target_val:,}"),
+            box_line(f"Total Ruang Data   : {res['total_data']:,} data pesanan terurut"),
+            box_line(f"Status Ditemukan   : {'YA (Ditemukan di indeks ' + str(res['found_idx']) + ')' if found else 'TIDAK DITEMUKAN'}"),
+            box_line(f"Jumlah Match Cocok : {len(res['matches'])} pesanan"),
+            sep,
+            box_line("PERBANDINGAN EFISIENSI PENCARIAN:"),
+            box_line(f"  1. BINARY SEARCH  : {res['steps_bs']} langkah komparasi (O(log n)) | {res['durasi_bs_ms']:.4f} ms"),
+            box_line(f"  2. LINEAR SEARCH  : {res['steps_ls']} langkah komparasi (O(n))     | {res['durasi_ls_ms']:.4f} ms"),
+            sep,
+            d_sep,
+            ""
+        ]
+
+        if found:
+            lines.append("--- PESANAN COCOK (Menampilkan hingga 8 pesanan pertama) ---")
+            for i, p in enumerate(res["matches"][:8]):
+                lines.append(f"  {i + 1:2d}. {p.ringkasan()}")
+            if len(res["matches"]) > 8:
+                lines.append(f"      ... dan {len(res['matches']) - 8} pesanan lainnya dengan nilai yang sama.")
+        else:
+            lines.append(f"Tidak ada pesanan dengan {kunci_nama}{target_val:,} di laporan ini.")
+
+        report = "\n".join(lines)
+        self.txt_result.delete("1.0", tk.END)
+        self.txt_result.insert(tk.END, report)
+
+    def action_m3_duel_sort(self):
+        if not self.data_loaded or len(self.array_pesanan) == 0:
+            messagebox.showwarning("Peringatan", "Muat data CSV terlebih dahulu!")
+            return
+
+        limit = 500
+        self.log_command(f"=== MEMULAI DUEL ALGORITMA SORTING M3 ({limit} DATA) ===")
+        res = self.laporan_mgr.duel_sort(self.array_pesanan, limit=limit, sort_by="harga")
+
+        w1, w2, w3, w4 = 19, 15, 13, 21
+        sep = "+" + "-" * (w1 + 2) + "+" + "-" * (w2 + 2) + "+" + "-" * (w3 + 2) + "+" + "-" * (w4 + 2) + "+"
+        total_len = len(sep)
+        d_sep = "=" * total_len
+
+        def row(c1, c2, c3, c4):
+            return f"| {c1:<{w1}} | {c2:>{w2}} | {c3:<{w3}} | {c4:<{w4}} |"
+
+        hdr_row = row("Algoritma Sorting", "Waktu Eksekusi", "Kompleksitas", "Efisiensi")
+
+        lines = [
+            d_sep,
+            "|" + f"HASIL UJI TANDING ALGORITMA SORTING M3 ({limit} DATA)".center(total_len - 2) + "|",
+            "|" + "Kunci Pengurutan: Nominal Harga (Rp) Ascending".center(total_len - 2) + "|",
+            sep,
+            hdr_row,
+            sep,
+            row("Insertion Sort", f"{res['durasi_ins_ms']:.4f} ms", "O(n^2)", "Tercepat (Adaptive)"),
+            row("Selection Sort", f"{res['durasi_sel_ms']:.4f} ms", "O(n^2)", "Stabil Min Swap"),
+            row("Bubble Sort", f"{res['durasi_bub_ms']:.4f} ms", "O(n^2)", "Banyak Swap"),
+            sep,
+            d_sep,
+            "",
+            "PEMBAHASAN ANALITIS SORTING M3:",
+            "1. Insertion Sort unggul karena sifat adaptifnya: jika sebagian data sudah",
+            "   hampir terurut, pergeseran inner loop berhenti lebih cepat (mendekati O(n)).",
+            "2. Selection Sort memiliki jumlah pergeseran swap minimum (tepat n kali),",
+            "   namun selalu memeriksa seluruh pasangan sehingga tetap berbiaya n(n-1)/2 komparasi.",
+            "3. Bubble Sort lambat karena melakukan swap berulang kali di setiap tetangga elemen."
+        ]
+
+        report = "\n".join(lines)
+        self.txt_result.delete("1.0", tk.END)
+        self.txt_result.insert(tk.END, report)
+        self.log_command(f"M3 - Duel Sort: Insertion {res['durasi_ins_ms']:.4f}ms | Selection {res['durasi_sel_ms']:.4f}ms | Bubble {res['durasi_bub_ms']:.4f}ms")
 
 
 def main():

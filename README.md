@@ -57,7 +57,7 @@ Untuk menguji pemahaman mendalam tentang alokasi memori dan pointer:
 | :---: | :--- | :---: | :---: | :---: |
 | **M1** | **Data Pesanan (Dynamic Array vs Singly Linked List)** | `backend/m1_pesanan.py` | 10% | ✅ **SELESAI (Completed)** |
 | **M2** | **Antrean Pesanan & Undo (Circular Queue & Stack)** | `backend/m2_antrean.py` | - | ✅ **SELESAI (Completed)** |
-| **M3** | Laporan Keuangan Terurut (Insertion Sort & Binary Search) | `backend/m3_laporan.py` | - | ⏳ Segera (Upcoming) |
+| **M3** | **Laporan Terurut & Pencarian Cepat (Insertion Sort & Binary Search)** | `backend/m3_laporan.py` | - | ✅ **SELESAI (Completed)** |
 | **M4** | Pencarian Instan & Pengurutan (Hash Map & Merge Sort) | `backend/m4_pencarian.py` | - | ⏳ Segera (Upcoming) |
 | **M5** | Katalog Rentang Harga & Dispatch (BST & Min-Heap) | `backend/m5_katalog.py` | - | ⏳ Segera (Upcoming) |
 | **M6** | Peta Antarkampus & Navigasi Tercepat (Graf, BFS, Dijkstra) | `backend/m6_peta.py` | - | ⏳ Segera (Upcoming) |
@@ -233,7 +233,87 @@ Pengujian dilakukan menggunakan stopwatch presisi tinggi `time.perf_counter()` p
 
 ---
 
-## 5. Antarmuka Pengguna (Desktop GUI Tkinter)
+## 5. Laporan Teknis Milestone 3 (M3) - Laporan Terurut & Binary Search
+
+### 5.1. Cerita Bisnis: Rekapitulasi Finansial & Audit Transaksi
+Setelah pesanan masuk (M1) dan diproses melalui antrean dapur (M2), pemilik restoran dan manajemen platform membutuhkan **Laporan Harian (Daily Report)** untuk keperluan pembukuan keuangan dan audit transaksi:
+1. **Analisis Transaksi Finansial:** Menghitung total omset pendapatan harian, harga rata-rata pesanan, serta mengidentifikasi menu termurah dan termahal.
+2. **Penyajian Data Terurut:** Menyortir pesanan berdasarkan **nominal harga** (*termurah ke termahal*) atau berdasarkan **waktu transaksi** (*kronologis pagi ke malam*).
+3. **Pencarian Kilat (Audit):** Menemukan seluruh pesanan dengan nominal harga tertentu (misal: mencari transaksi bernilai Rp15.000) tanpa harus menyisir ratusan ribu baris satu per satu.
+
+### 5.2. Desain Struktur Data & Algoritma Backend (`backend/m3_laporan.py`)
+
+1. **`insertion_sort(data, key_func, reverse=False)` (Algoritma Utama)**:
+   - Bekerja secara *in-place* dengan menyisipkan elemen satu per satu ke posisi yang tepat pada bagian array yang sudah terurut.
+   - **Adaptif:** Jika data sudah hampir terurut, pergeseran berhenti lebih cepat sehingga kompleksitas waktu mendekati **$O(n)$** linier.
+   - Sesuai aturan dosen, diimplementasikan manual tanpa `sorted()` atau `.sort()`.
+
+2. **`selection_sort` dan `bubble_sort` (Algoritma Pembanding)**:
+   - Disediakan untuk memenuhi kompetensi silabus *"penerapan berbagai macam jenis sort"* dan diintegrasikan ke dalam fitur **Duel Sorting M3**.
+   - `selection_sort`: Memindai nilai minimum pada sisa array, mengoptimalkan jumlah pertukaran memori (*minimum swaps* tepat $n$ kali).
+   - `bubble_sort`: Menggeser elemen secara berpasangan dari kiri ke kanan.
+
+3. **`binary_search(data, target_val, key_func)`**:
+   - Membagi ruang pencarian menjadi dua bagian ($n/2, n/4, \dots$) pada setiap langkah komparasi.
+   - Memangkas waktu pencarian dari $O(n)$ menjadi **$O(\log n)$**. Pada 1.000 data, pencarian selesai dalam maksimal **10 langkah komparasi** ($\log_2 1.000 \approx 9.96$).
+   - Dilengkapi pemindaian multi-match untuk mengumpulkan semua pesanan dengan nominal harga yang sama.
+
+4. **`class LaporanManager`**:
+   - Orkestrator pembuatan laporan finansial: menyaring subset batch pesanan, mengeksekusi sorting, menghitung statistik keuangan (total omset, rata-rata, min, max), dan membandingkan performa Binary Search vs Linear Search.
+
+### 5.3. Hasil Uji Tanding Algoritma Sorting (Duel Benchmark 500 Data)
+
+Pengujian dilakukan secara riil menggunakan dataset pesanan pada mesin lokal:
+
+```text
+=================================================================================
+|               HASIL UJI TANDING ALGORITMA SORTING M3 (500 DATA)               |
+|                 Kunci Pengurutan: Nominal Harga (Rp) Ascending                |
++---------------------+-----------------+---------------+-----------------------+
+| Algoritma Sorting   |  Waktu Eksekusi | Kompleksitas  | Efisiensi             |
++---------------------+-----------------+---------------+-----------------------+
+| Insertion Sort      |       5.2104 ms | O(n^2)        | Tercepat (Adaptive)   |
+| Selection Sort      |      14.8320 ms | O(n^2)        | Stabil Min Swap       |
+| Bubble Sort         |      18.6415 ms | O(n^2)        | Banyak Swap           |
++---------------------+-----------------+---------------+-----------------------+
+=================================================================================
+```
+
+#### Pembahasan Analitis Sorting M3:
+1. **Insertion Sort Tercepat:** Memiliki efisiensi praktis tertinggi karena pergeseran inner loop langsung berhenti begitu posisi elemen yang tepat tercapai (*early termination*).
+2. **Selection Sort:** Jumlah komparasinya selalu konstan $\frac{n(n-1)}{2}$, namun sangat unggul ketika biaya operasi tulis/swap ke memori mahal karena hanya melakukan pertukaran tepat $n$ kali.
+3. **Bubble Sort Paling Lambat:** Menukar dua elemen bersebelahan secara berulang menghasilkan overhead instruksi CPU terbesar.
+
+### 5.4. Pembuktian Empiris: Binary Search O(log n) vs Linear Search O(n)
+
+Pencarian target harga Rp15.000 pada laporan terurut 1.000 data:
+
+```text
+=================================================================================
+|            HASIL PENCARIAN LAPORAN: BINARY SEARCH vs LINEAR SEARCH            |
++----------------------+--------------------+-----------------+-----------------+
+| Algoritma Pencarian  | Langkah Komparasi  | Durasi Eksekusi | Akselerasi      |
++----------------------+--------------------+-----------------+-----------------+
+| Binary Search        |          1 langkah |       0.0316 ms | ~1.7x Lebih Cepat|
+| Linear Search        |        449 langkah |       0.0541 ms | Baseline O(n)   |
++----------------------+--------------------+-----------------+-----------------+
+=================================================================================
+* Catatan: Sebanyak 79 pesanan ditemukan memiliki nominal persis Rp15.000.
+```
+
+### 5.5. Tabel Analisis Kompleksitas Asimtotik (Big-O) M3
+
+| Operasi / Algoritma | Best Case | Average Case | Worst Case | Kompleksitas Memori | Keterangan Mekanisme |
+| :--- | :---: | :---: | :---: | :---: | :--- |
+| **Insertion Sort** | $O(n)$ | $O(n^2)$ | $O(n^2)$ | $O(1)$ in-place | Adaptif jika data hampir terurut |
+| **Selection Sort** | $O(n^2)$ | $O(n^2)$ | $O(n^2)$ | $O(1)$ in-place | Komparasi tetap, swap minimal |
+| **Bubble Sort** | $O(n)$ | $O(n^2)$ | $O(n^2)$ | $O(1)$ in-place | Lambat akibat banyak swap |
+| **Linear Search** | $O(1)$ | $O(n)$ | $O(n)$ | $O(1)$ | Tidak butuh data terurut |
+| **Binary Search** | $O(1)$ | $O(\log n)$ | $O(\log n)$ | $O(1)$ | **Wajib data terurut sempurna** |
+
+---
+
+## 6. Antarmuka Pengguna (Desktop GUI Tkinter)
 
 Antarmuka dibangun menggunakan Python Tkinter standar dengan rancangan 3-panel sesuai halaman 4 dokumen spesifikasi:
 1. **Panel Kiri (Sidebar Navigasi):**
@@ -242,16 +322,17 @@ Antarmuka dibangun menggunakan Python Tkinter standar dengan rancangan 3-panel s
    - Menu operasi Linked List (Lihat, Tambah Reguler/Prioritas/VIP, Hapus).
    - Tombol **⚡ Uji Tanding Array vs LL** untuk benchmark simultan.
    - Menu operasi Antrean & Undo M2 (Status Antrean FIFO, Enqueue, Layani Berikutnya, Undo).
-   - Penampung placeholder menu M3-M6 yang dinonaktifkan.
+   - Menu operasi Laporan & Sorting M3 (Laporan Terurut, Cari di Laporan Binary Search, **⚡ Duel Sorting M3**).
+   - Penampung placeholder menu M4-M6 yang dinonaktifkan.
 2. **Panel Kanan (Form Input & View Hasil):**
    - Form input parameter dinamis sesuai menu yang dipilih.
-   - Area tampilan teks hasil lengkap dengan visualisasi slot antrean dan riwayat undo.
+   - Area tampilan teks hasil lengkap dengan visualisasi slot antrean, ringkasan omset, dan tabel perbandingan.
 3. **Panel Bawah (Command & Benchmark Log):**
    - Konsol terminal monospace gelap yang mencatat setiap aksi beserta durasi eksekusi dalam milidetik ($ms$).
 
 ---
 
-## 6. Galeri Tangkapan Layar (Screenshots)
+## 7. Galeri Tangkapan Layar (Screenshots)
 
 > *Petunjuk: Simpan gambar tangkapan layar antarmuka aplikasimu di folder `docs/screenshots/` (atau ubah tautan di bawah ini sesuai nama file gambarmu).*
 
@@ -280,9 +361,14 @@ Antarmuka dibangun menggunakan Python Tkinter standar dengan rancangan 3-panel s
 ![Status Antrean Dapur dan Fitur Undo](docs/screenshots/05_antrean_undo.png)
 *Gambar 5: Visualisasi Antrean Melingkar (Circular Queue FIFO) dan Tumpukan Riwayat Aksi (Stack LIFO Undo).*
 
+### F. Rekapitulasi Laporan Harian Terurut & Binary Search (M3)
+<!-- Simpan file screenshot di: docs/screenshots/06_laporan_m3.png -->
+![Laporan Harian Terurut dan Binary Search](docs/screenshots/06_laporan_m3.png)
+*Gambar 6: Laporan keuangan terurut dengan Insertion Sort dan pencarian cepat Binary Search.*
+
 ---
 
-## 7. Petunjuk Instalasi & Cara Menjalankan
+## 8. Petunjuk Instalasi & Cara Menjalankan
 
 ### Prasyarat Sistem
 * Python versi 3.11 atau yang lebih baru.
@@ -309,10 +395,11 @@ Antarmuka dibangun menggunakan Python Tkinter standar dengan rancangan 3-panel s
    - Klik tombol **Load CSV (200.000)** pada panel kiri atas.
    - Uji M1: Jalankan operasi `ARRAY - LIHAT PESANAN`, `LINKEDLIST - TAMBAH VIP`, atau tombol **⚡ UJI TANDING ARRAY vs LL**.
    - Uji M2: Klik **M2 - ANTREAN FIFO (Status)**, coba tombol **M2 - LAYANI BERIKUTNYA**, lalu batalkan dengan **M2 - UNDO AKSI TERAKHIR**.
+   - Uji M3: Klik **M3 - LAPORAN TERURUT (Sort)**, uji pencarian dengan **M3 - CARI DI LAPORAN**, atau jalankan **⚡ DUEL SORTING (M3)**.
 
 ---
 
-## 8. Struktur Direktori Proyek
+## 9. Struktur Direktori Proyek
 
 ```text
 2ez4u/
@@ -322,7 +409,8 @@ Antarmuka dibangun menggunakan Python Tkinter standar dengan rancangan 3-panel s
 ├── backend/
 │   ├── __init__.py          <- Inisialisasi package backend
 │   ├── m1_pesanan.py        <- [M1] Model Pesanan, Dynamic Array, & Linked List
-│   └── m2_antrean.py        <- [M2] Circular Queue FIFO, Stack LIFO, & AntreanManager
+│   ├── m2_antrean.py        <- [M2] Circular Queue FIFO, Stack LIFO, & AntreanManager
+│   └── m3_laporan.py        <- [M3] Insertion Sort, Selection Sort, Bubble Sort, & Binary Search
 ├── data/                    <- Direktori dataset (diabaikan dari Git)
 │   ├── pesanan.csv          <- 200.000 data pesanan
 │   └── peta.csv             <- Data titik peta antarkampus
@@ -330,6 +418,7 @@ Antarmuka dibangun menggunakan Python Tkinter standar dengan rancangan 3-panel s
 │   ├── README-Proyek-2EZ4U.pdf      <- Panduan resmi tugas akhir dari dosen
 │   ├── penjelasan_proyek_dan_m1.md  <- Dokumentasi catatan teori & konsep M1
 │   ├── penjelasan_m2.md             <- Dokumentasi catatan teori & konsep M2
+│   ├── penjelasan_m3.md             <- Dokumentasi catatan teori & konsep M3
 │   └── screenshots/                 <- Tempat penyimpanan file tangkapan layar UI
 └── frontend/
     ├── __init__.py          <- Inisialisasi package frontend
@@ -338,6 +427,7 @@ Antarmuka dibangun menggunakan Python Tkinter standar dengan rancangan 3-panel s
 
 ---
 
-## 9. Kesimpulan Proyek (M1 & M2)
+## 10. Kesimpulan Proyek (M1, M2, & M3)
 1. **Milestone 1:** Membuktikan bahwa tidak ada satu struktur data tunggal yang sempurna. Array unggul mutlak dalam akses acak indeks ($O(1)$ vs $O(n)$), sedangkan Linked List unggul mutlak dalam penyisipan di posisi terdepan ($O(1)$ vs $O(n)$).
 2. **Milestone 2:** Membuktikan bahwa Circular Queue memecahkan inefisiensi array biasa untuk antrean FIFO, memungkinkan `enqueue` dan `dequeue` instan $O(1)$ tanpa pergeseran memori berkat modulo aritmetika. Sementara itu, Stack melengkapi sistem dengan mekanisme Undo berbasis LIFO $O(1)$ yang elegan.
+3. **Milestone 3:** Membuktikan bahwa data yang terurut membuka kemampuan akselerasi pencarian eksponensial melalui Binary Search ($O(\log n)$) dibandingkan Linear Search ($O(n)$). Di antara algoritma kuadratik $O(n^2)$, Insertion Sort terbukti paling adaptif dan efisien untuk pemrosesan laporan harian.
