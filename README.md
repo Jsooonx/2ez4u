@@ -1,4 +1,4 @@
-# Proyek "2EZ4U APP" - Delivery Service Backend Engine & Analisis Struktur Data
+# Proyek 2EZ4U APP - Delivery Service Backend Engine & Analisis Struktur Data
 
 > **Mata Kuliah:** Struktur Data & Analisa Algoritma (EC234303)  
 > **Departemen:** Teknik Komputer, Fakultas Teknologi Elektro dan Informatika Cerdas (FTEIC)  
@@ -11,91 +11,53 @@
 * **Nama Lengkap:** M. Gielang Fitrawan Mukhlish
 * **NRP:** 5024251019
 * **Kelas:** Struktur Data & Analisa Algoritma A
-* **Tautan Repository GitHub:** `https://github.com/Jsooonx/2ez4u.git`
-* **Tautan Video Demo:** [Tautan Video YouTube / Google Drive Demo]
+* **Repository GitHub:** `https://github.com/Jsooonx/2ez4u.git`
+* **Video Demo:** [Tautan Video YouTube / Google Drive Demo]
 
 ---
 
-## 1. Deskripsi & Gambaran Umum Proyek
+## 1. Gambaran Umum Proyek & Aturan Main
 
-**2EZ4U APP** adalah simulasi engine *backend* layanan pesan-antar makanan dan barang skala tinggi (miniatur GoFood / GrabFood / ShopeeFood) yang dirancang untuk menangani beban trafik **200.000 data pesanan transaksi**.
+**2EZ4U APP** adalah simulasi engine *backend* layanan pesan-antar makanan berskala tinggi yang menguji performa struktur data buatan sendiri (*from scratch*) pada dataset transaksi **200.000 pesanan** (`data/pesanan.csv`).
 
-Fokus utama proyek ini bukan sekadar membangun antarmuka visual, melainkan **merancang, mengimplementasikan, dan membuktikan efisiensi struktur data serta algoritma buatan sendiri dari nol (*from scratch*)** secara empiris dengan tolok ukur stopwatch milidetik ($ms$).
+### Arsitektur 3 Lapisan
+1. **Data Layer (`data/`):** Menyimpan 200.000 data CSV pesanan transaksi dan peta antarkampus.
+2. **Backend Layer (`backend/`):** Enam modul struktur data mandiri dari M1 hingga M6 tanpa library instan.
+3. **Frontend Layer (`frontend/` & `app.py`):** Antarmuka desktop 3-panel Tkinter untuk pengujian operasi dan stopwatch milidetik ($ms$).
 
-### Arsitektur 3 Lapisan (3-Layer Architecture)
-```text
-┌─────────────────────────────────────────────────────────────┐
-│                    1. LAPISAN FRONTEND                      │
-│            (frontend/ui.py & app.py - Tkinter)              │
-│  Antarmuka desktop 3 panel untuk memanggil modul backend,   │
-│      menerima input parameter, dan mencatat waktu (ms)      │
-└──────────────────────────────▲──────────────────────────────┘
-                               │ Memanggil API internal
-┌──────────────────────────────▼──────────────────────────────┐
-│                    2. LAPISAN BACKEND                       │
-│           (backend/m1_pesanan.py ... m6_peta.py)            │
-│    Struktur data murni buatan sendiri tanpa modul instan    │
-└──────────────────────────────▲──────────────────────────────┘
-                               │ Membaca data
-┌──────────────────────────────▼──────────────────────────────┐
-│                     3. LAPISAN DATA                         │
-│                    (data/pesanan.csv)                       │
-│               200.000 baris data transaksi                  │
-└─────────────────────────────────────────────────────────────┘
-```
-
-### ⚠️ Batasan Ketat Implementasi (Strict Constraints)
-Untuk menguji pemahaman mendalam tentang alokasi memori dan pointer:
-* **DILARANG:** `dict`, literal `{}`, `set`, `sorted()`, `.sort()`, `heapq`, `bisect`, `collections.*`, dictionary/set comprehension.
-* **DIPERBOLEHKAN:** `list` (hanya sebagai array primitif berukuran tetap), `tuple`, kelas OOP manual (`class`), operasi aritmetika, dan pembacaan berkas I/O standar.
+### Batasan Implementasi
+* **Dilarang:** `dict`, literal `{}`, `set`, `sorted()`, `.sort()`, `heapq`, `bisect`, `collections.*`, dictionary/set comprehension.
+* **Diperbolehkan:** `list` (sebagai array primitif berukuran tetap), `tuple`, class OOP manual, operasi aritmetika, dan standard file I/O.
 
 ---
 
-## 2. Peta Perjalanan Semester (Milestone Progress Tracker)
+## 2. Peta Perjalanan Milestone
 
-| Milestone | Topik & Struktur Data | Berkas Backend | Bobot | Status |
-| :---: | :--- | :---: | :---: | :---: |
-| **M1** | **Data Pesanan (Dynamic Array vs Singly Linked List)** | `backend/m1_pesanan.py` | 10% | ✅ **SELESAI (Completed)** |
-| **M2** | **Antrean Pesanan & Undo (Circular Queue & Stack)** | `backend/m2_antrean.py` | - | ✅ **SELESAI (Completed)** |
-| **M3** | **Laporan Terurut & Pencarian Cepat (Insertion Sort & Binary Search)** | `backend/m3_laporan.py` | - | ✅ **SELESAI (Completed)** |
-| **M4** | Pencarian Instan & Pengurutan (Hash Map & Merge Sort) | `backend/m4_pencarian.py` | - | ⏳ Segera (Upcoming) |
-| **M5** | Katalog Rentang Harga & Dispatch (BST & Min-Heap) | `backend/m5_katalog.py` | - | ⏳ Segera (Upcoming) |
-| **M6** | Peta Antarkampus & Navigasi Tercepat (Graf, BFS, Dijkstra) | `backend/m6_peta.py` | - | ⏳ Segera (Upcoming) |
-
----
-
-## 3. Laporan Teknis Milestone 1 (M1) - Array vs Linked List
-
-### 3.1. Cerita & Aturan Bisnis
-Pada peluncuran awal layanan, pesanan masuk harus dapat disimpan, dibaca, disisipkan, dan dibatalkan/dihapus dengan aturan 3 tingkat pelanggan:
-1. **REGULER (Prioritas 3):** Pelanggan biasa, antre di barisan **paling belakang**.
-2. **PRIORITAS (Prioritas 2):** Pelanggan prioritas, **menyerobot tepat ke tengah antrean** ($n/2$).
-3. **VIP (Prioritas 1):** Pelanggan eksklusif, langsung masuk ke **urutan nomor satu (paling depan / indeks 0)** mendahului seluruh antrean.
-
-### 3.2. Desain Struktur Data Backend (`backend/m1_pesanan.py`)
-1. **`class Pesanan`**:
-   - Membungkus 9 atribut CSV: `oid`, `pelanggan`, `resto`, `menu`, `harga`, `prioritas`, `t_masuk_detik`, `t_selesai_detik`, `status`.
-   - Menggunakan deklarasi `__slots__` sehingga terbebas dari dictionary internal Python dan memangkas penggunaan memori RAM hingga ~45% saat memuat 200.000 data.
-2. **`class Array` (Dynamic Array)**:
-   - Alokasi memori berukuran tetap `[None] * capacity`.
-   - Mengimplementasikan `_resize(capacity * 2)`: saat penuh, kapasitas memori dilipatgandakan 2x lipat dan elemen lama disalin manual ($O(1)$ amortized).
-   - `get(i)`: Mengakses langsung via indeks memori ($O(1)$).
-   - `insert(i, v)`: Menggeser elemen dari belakang mundur ke kanan ($O(n)$).
-   - `delete(i)`: Menghapus elemen dan menggeser elemen kanan maju ke kiri ($O(n)$).
-3. **`class Node` & `class LinkList` (Singly Linked List dengan Tail Pointer)**:
-   - Setiap elemen dibungkus simpul `Node` berpenunjuk `next`.
-   - Menyimpan referensi `head`, `tail`, dan `size`.
-   - `append(v)`: Tambah pesanan REGULER di ekor (`tail.next = node; tail = node`) bernilai instan **$O(1)$**.
-   - `insert_front(v)`: Tambah pesanan VIP di urutan terdepan (`node.next = head; head = node`) bernilai instan **$O(1)$**.
-   - `get(i)`: Menelusuri rantai dari `head` maju sebanyak $i$ langkah ($O(n)$).
-   - `delete(i)`: Traversal ke simpul $(i-1)$ lalu mengalihkan pointer simpul ($O(n)$).
+| Milestone | Topik & Struktur Data | Berkas Backend | Status |
+| :---: | :--- | :---: | :---: |
+| **M1** | **Data Pesanan (Dynamic Array vs Singly Linked List)** | `backend/m1_pesanan.py` | Selesai |
+| **M2** | **Antrean Pesanan & Undo (Circular Queue & Stack)** | `backend/m2_antrean.py` | Selesai |
+| **M3** | **Laporan Terurut & Pencarian Cepat (Insertion Sort & Binary Search)** | `backend/m3_laporan.py` | Selesai |
+| **M4** | Pencarian Instan & Pengurutan (Hash Map & Merge Sort) | `backend/m4_pencarian.py` | Segera |
+| **M5** | Katalog Rentang Harga & Dispatch (BST & Min-Heap) | `backend/m5_katalog.py` | Segera |
+| **M6** | Peta Antarkampus & Navigasi Tercepat (Graf, BFS, Dijkstra) | `backend/m6_peta.py` | Segera |
 
 ---
 
-### 3.3. Hasil Uji Tanding & Analisis Performa (Benchmark Riil)
+## 3. Milestone 1 (M1) - Array vs Singly Linked List
 
-Pengujian dilakukan secara langsung menggunakan 200.000 baris data pesanan riil pada mesin uji dengan presisi stopwatch `time.perf_counter()`:
+### 3.1. Aturan Bisnis & Desain Backend (`backend/m1_pesanan.py`)
+M1 mengelola penyimpanan pesanan dengan aturan tiga tingkatan prioritas:
+* **Reguler (Prioritas 3):** Antre di barisan paling belakang.
+* **Prioritas (Prioritas 2):** Menyerobot ke tengah barisan ($n/2$).
+* **VIP (Prioritas 1):** Langsung ke urutan pertama (indeks 0).
 
+Implementasi:
+* **`Pesanan`**: 9 atribut CSV dengan `__slots__` untuk memangkas konsumsi RAM hingga ~45%.
+* **`Array`**: Fixed array berkapasitas dinamis (`_resize` doubling 2x lipat). Akses $O(1)$, insert/delete $O(n)$ karena pergeseran memori.
+* **`LinkList`**: Singly linked list dengan pointer `head`, `tail`, dan `size`. Akses $O(n)$, insert depan (VIP) dan insert belakang (Reguler) instan $O(1)$.
+
+### 3.2. Hasil Benchmark Riil M1 (200.000 Data)
 ```text
 =================================================================================
 |                HASIL UJI TANDING PERFORMA: ARRAY vs LINKED LIST               |
@@ -111,160 +73,38 @@ Pengujian dilakukan secara langsung menggunakan 200.000 baris data pesanan riil 
 =================================================================================
 ```
 
-#### Pembahasan Analitis:
-1. **Operasi Lihat Pesanan (Get Index $n/2$):**
-   - **Array menang telak (~1.000x lebih cepat):** Array memiliki sifat *direct memory addressing* $O(1)$. Komputer langsung menghitung alamat memori `base + (index * size)`.
-   - **Linked List lambat ($O(n)$):** Linked List tidak memiliki indeks memori tetap dan harus menelusuri 100.000 node secara berurutan.
-2. **Operasi Tambah REGULER (Paling Belakang):**
-   - **Hasil Imbang ($O(1)$):** Array memanfaatkan kapasitas cadangan hasil doubling ($O(1)$ amortized), sedangkan Linked List memanfaatkan pointer `self.tail` tanpa perlu traversal.
-3. **Operasi Tambah PRIORITAS (Tengah Barisan):**
-   - Keduanya sama-sama berbiaya $O(n)$, namun karena sebab yang berbeda: Array melakukan pergeseran fisik memori (100.000 elemen digeser ke kanan), sedangkan Linked List melakukan traversal pointer sebanyak 100.000 langkah.
-4. **Operasi Tambah VIP (Paling Depan / Indeks 0):**
-   - **Linked List menang telak (~1.200x lebih cepat):** Linked List hanya memindahkan pointer `head` ke simpul baru ($O(1)$ instan dalam 0.01 ms).
-   - **Array sangat lambat ($O(n)$):** Array harus menggeser **seluruh 200.000 elemen** ke kanan satu petak untuk menyediakan slot kosong di indeks 0.
+---
+
+## 4. Milestone 2 (M2) - Circular Queue & Stack (Undo)
+
+### 4.1. Alur Dapur & Mekanisme Undo (`backend/m2_antrean.py`)
+* **Circular Queue (FIFO Dapur):** Menggunakan fixed array `[None] * capacity` dengan penunjuk `front` dan `rear`. Menggunakan modulo aritmetika `(index + 1) % capacity` sehingga `enqueue` dan `dequeue` murni $O(1)$ tanpa menggeser ratusan ribu data.
+* **Stack (LIFO Undo):** Mencatat riwayat aksi kasir secara berurutan. Operasi `push()` dan `pop()` berjalan dalam $O(1)$.
+* **Operasi Pemulihan Undo:**
+  - Batal Layani (Dequeue): Pesanan dikembalikan ke depan antrean via `requeue_front()` dengan rumus `(front - 1 + capacity) % capacity` ($O(1)$).
+  - Batal Masuk (Enqueue): Pesanan dicabut dari belakang via `unqueue_rear()` dengan rumus `(rear - 1 + capacity) % capacity` ($O(1)$).
+
+### 4.2. Perbandingan Kompleksitas & Benchmark Riil M2
+| Operasi | Array Biasa (`list.pop(0)`) | Circular Queue | Stack (Undo) | Waktu Riil |
+| :--- | :---: | :---: | :---: | :---: |
+| Enqueue Antrean | $O(1)$ amortized | **$O(1)$ amortized** | - | 0.0020 ms |
+| Dequeue Layani | $O(n)$ (geser data) | **$O(1)$ murni** | - | 0.0021 ms |
+| Undo Batal Layani | $O(n)$ (`insert(0)`) | **$O(1)$ murni** | - | 0.0022 ms |
+| Undo Batal Masuk | $O(1)$ | **$O(1)$** | - | 0.0020 ms |
+| Push / Pop Stack | - | - | **$O(1)$** | 0.0018 ms |
 
 ---
 
-## 4. Laporan Teknis Milestone 2 (M2) - Antrean & Undo (Queue & Stack)
+## 5. Milestone 3 (M3) - Laporan Terurut & Binary Search
 
-### 4.1. Cerita Bisnis: Alur Pemrosesan Dapur & Kasir
-Setelah pesanan berhasil dicatat dan dimuat pada M1, sistem melangkah ke tahap **eksekusi operasional dapur restoran dan meja kasir**:
+### 5.1. Rekapitulasi & Desain Algoritma (`backend/m3_laporan.py`)
+M3 menyortir laporan keuangan transaksi harian dan mempercepat pencarian audit:
+* **`insertion_sort`**: Algoritma utama *in-place* $O(n^2)$. Bersifat adaptif (mendekati $O(n)$ jika data hampir terurut).
+* **`selection_sort` & `bubble_sort`**: Algoritma pembanding untuk pembuktian empiris.
+* **`binary_search`**: Membagi ruang pencarian menjadi dua di setiap langkah ($O(\log n)$), memangkas waktu pencarian secara drastis dibanding Linear Search ($O(n)$).
+* **`LaporanManager`**: Mengelola penyaringan batch data, menghitung statistik omset (total, rata-rata, min, max), dan menjalankan benchmark duel sort.
 
-```text
-               [ 1. PESANAN MASUK (ENQUEUE) ]
-                             │
-                             ▼
-        ┌─────────────────────────────────────────┐
-        │   ANTREAN MELINGKAR (CIRCULAR QUEUE)    │
-        │   Prinsip FIFO (First In, First Out)    │
-        │   [P1 (FRONT)] -> [P2] -> [P3 (REAR)]   │
-        └────────────────────┬────────────────────┘
-                             │
-                             ▼
-               [ 2. LAYANI PESANAN (DEQUEUE) ]
-                   Pesanan dimasak / diantar
-                   Status berubah: ANTRE -> DONE
-                             │
-                             ▼
-        ┌─────────────────────────────────────────┐
-        │        TUMPUKAN UNDO (STACK LIFO)       │
-        │   [TOP] DEQUEUE: Pesanan P1 @ 09:25:00  │  <-- Jika kasir salah klik,
-        │         ENQUEUE: Pesanan P3 @ 09:24:50  │      tekan tombol UNDO!
-        └─────────────────────────────────────────┘
-```
-
-1. **Prinsip Antrean FIFO (First In, First Out):** Pesanan yang masuk terlebih dahulu harus dimasak dan disajikan lebih awal kepada kurir. Tidak boleh ada pesanan baru yang mendahului pesanan lama di dapur.
-2. **Kebutuhan Fitur Undo (Kasir):** Kasir restoran manusiawi dan dapat melakukan kesalahan (misalnya: tidak sengaja menekan tombol "Layani", atau pelanggan mendadak membatalkan pesanan yang baru saja masuk). Sistem membutuhkan fitur **Undo berbasis LIFO (Last In, First Out)** untuk memulihkan kondisi antrean seperti sediakala tanpa merusak urutan pesanan lainnya.
-
-### 4.2. Mengapa Array Biasa Gagal & Solusi Circular Queue
-Dosen secara ketat melarang penggunaan modul `collections.deque` maupun pemanggilan `list.pop(0)`.
-* **Kelemahan Fatal Array Biasa untuk Antrean:**  
-  Jika menggunakan array linear biasa, saat elemen terdepan (indeks 0) diambil/dilayani via `pop(0)`, seluruh elemen di belakangnya harus digeser satu langkah ke kiri. Jika terdapat **200.000 pesanan**, setiap satu kali klik layani akan memaksa CPU menggeser 199.999 elemen di memori RAM ($O(n)$). Operasi ini sangat boros CPU dan membuat antrean tersendat.
-* **Solusi Jenius Circular Queue (Antrean Melingkar):**  
-  Alih-alih menggeser ratusan ribu data, data dibiarkan diam di tempatnya dan hanya pointer `front` dan `rear` yang digeser menggunakan **Modulo Aritmetika (`% capacity`)**. Dengan cara ini, operasi penambahan (`enqueue`) dan pengambilan (`dequeue`) berjalan dalam waktu konstan murni **$O(1)$**.
-
-### 4.3. Desain Struktur Data Backend (`backend/m2_antrean.py`)
-
-1. **`class CircularQueue` (Antrean Melingkar FIFO)**:
-   - Alokasi memori berukuran tetap `[None] * capacity` dengan penunjuk indeks `front = 0`, `rear = -1`, dan `size = 0`.
-   - **Pergerakan Pointer Maju (Modulo Aritmetika):**
-     - Enqueue: `rear = (rear + 1) % capacity`
-     - Dequeue: `front = (front + 1) % capacity`
-   - **Penggandaan Kapasitas (Dynamic Resize):**
-     - Saat `size == capacity`, kapasitas dilipatgandakan 2x lipat (`capacity * 2`).
-     - Seluruh elemen melingkar ditata ulang (*unwrapped*) menjadi urutan linear dari indeks 0 sampai `size - 1` ($O(1)$ amortized).
-   - **Operasi Khusus Pendukung Undo (O(1)):**
-     - `requeue_front(item)`: Mengembalikan pesanan yang baru dilayani kembali ke posisi paling depan antrean dengan rumus penunjuk mundur berpenjaga negatif: `front = (front - 1 + capacity) % capacity`.
-     - `unqueue_rear()`: Membatalkan pesanan terakhir yang baru di-enqueue dengan memundurkan pointer ekor: `rear = (rear - 1 + capacity) % capacity`.
-
-2. **`class Stack` (Tumpukan LIFO untuk Fitur Undo)**:
-   - Alokasi array berukuran tetap `[None] * capacity` dengan penunjuk `top = -1`.
-   - Mengikuti prinsip **LIFO (Last In, First Out)**: aksi kasir yang paling akhir dilakukan berada di paling atas tumpukan, sehingga menjadi aksi pertama yang dibatalkan saat tombol Undo ditekan.
-   - Operasi `push(item)` dan `pop()` berjalan dalam waktu murni **$O(1)$**.
-   - Dilengkapi *dynamic doubling resize* ketika tumpukan penuh.
-
-3. **`class AksiUndo` & `class AntreanManager`**:
-   - `AksiUndo`: Objek penyimpan riwayat aksi kasir (`tipe`: `'ENQUEUE'` atau `'DEQUEUE'`, referensi `pesanan`, stempel waktu `waktu_str`, dan `keterangan`).
-   - `AntreanManager`: Otak pengintegrasi antara `CircularQueue` dan `Stack`:
-     - `tambah_antrean(pesanan)`: Melakukan `enqueue` ke dapur sekaligus `push` aksi `ENQUEUE` ke stack undo.
-     - `layani_berikutnya()`: Melakukan `dequeue` dari dapur, mengubah status pesanan menjadi `DONE`, dan `push` aksi `DEQUEUE` ke stack undo.
-     - `undo()`: Mengambil aksi teratas via `pop()` dari stack:
-       - Jika aksi adalah `DEQUEUE`: Kembalikan status pesanan menjadi `ANTRE` dan masukkan kembali ke depan antrean via `requeue_front()`.
-       - Jika aksi adalah `ENQUEUE`: Cabut pesanan yang baru masuk dari belakang antrean via `unqueue_rear()`.
-
-### 4.4. Perbandingan Kompleksitas Asimtotik (Big-O)
-
-| Operasi Antrean & Undo | Array Biasa (`list.pop(0)`) | Circular Queue (M2) | Stack LIFO (M2) | Analisis Mekanisme |
-| :--- | :---: | :---: | :---: | :--- |
-| **Enqueue (Masuk Belakang)** | $O(1)$ amortized | **$O(1)$ amortized** | - | Masuk di slot `rear`, tanpa geser data |
-| **Dequeue (Layani Depan)** | ❌ $O(n)$ (geser seluruh elemen) | ✅ **$O(1)$ murni** | - | Hanya memajukan pointer `front` |
-| **Peek (Lihat Terdepan)** | $O(1)$ | **$O(1)$** | - | Langsung baca `data[front]` |
-| **Undo Batal Layani** | ❌ $O(n)$ (`list.insert(0)`) | ✅ **$O(1)$ murni** | - | Memundurkan `front` dengan modulo |
-| **Undo Batal Masuk** | $O(1)$ | **$O(1)$** | - | Memundurkan `rear` dengan modulo |
-| **Push Aksi Undo** | - | - | **$O(1)$ amortized** | Menumpuk di posisi `top + 1` |
-| **Pop Aksi Undo** | - | - | **$O(1)$** | Mengambil aksi dari posisi `top` |
-
-### 4.5. Hasil Pengujian & Waktu Eksekusi Riil M2 (Benchmark Stopwatch)
-
-Pengujian dilakukan menggunakan stopwatch presisi tinggi `time.perf_counter()` pada simulasi operasional kasir dan antrean dapur:
-
-```text
-=================================================================================
-|                HASIL UJI PERFORMA OPERASI ANTREAN & UNDO (M2)                 |
-|                      (Circular Queue & Stack LIFO Engine)                     |
-+----------------------+--------------------+-----------------+-----------------+
-| Operasi              | Kompleksitas Teori | Durasi Riil (ms)| Status Operasi  |
-+----------------------+--------------------+-----------------+-----------------+
-| Enqueue Antrean      | O(1) amortized     |       0.0020 ms | Berhasil        |
-| Dequeue Layani       | O(1)               |       0.0021 ms | Berhasil        |
-| Peek Terdepan        | O(1)               |       0.0008 ms | Berhasil        |
-| Undo Batal Layani    | O(1)               |       0.0022 ms | Berhasil (LIFO) |
-| Undo Batal Enqueue   | O(1)               |       0.0020 ms | Berhasil (LIFO) |
-+----------------------+--------------------+-----------------+-----------------+
-=================================================================================
-```
-
-#### Pembahasan Analitis M2:
-1. **Kecepatan Konstan $O(1)$ Tanpa Lag:**  
-   Seluruh operasi antrean dan undo mencatatkan waktu **~0.002 milidetik**, terlepas dari seberapa banyak pesanan yang ada di dalam antrean. Hal ini membuktikan efektivitas pointer melingkar modulo dibanding pendekatan array biasa.
-2. **Integritas Urutan Pesanan Tetap Terjaga:**  
-   Metode `requeue_front()` menjamin bahwa pesanan yang batal dilayani kembali menempati posisi terdepan antrean, sehingga urutan keadilan FIFO pelanggan tidak terganggu sedikit pun.
-
-
----
-
-## 5. Laporan Teknis Milestone 3 (M3) - Laporan Terurut & Binary Search
-
-### 5.1. Cerita Bisnis: Rekapitulasi Finansial & Audit Transaksi
-Setelah pesanan masuk (M1) dan diproses melalui antrean dapur (M2), pemilik restoran dan manajemen platform membutuhkan **Laporan Harian (Daily Report)** untuk keperluan pembukuan keuangan dan audit transaksi:
-1. **Analisis Transaksi Finansial:** Menghitung total omset pendapatan harian, harga rata-rata pesanan, serta mengidentifikasi menu termurah dan termahal.
-2. **Penyajian Data Terurut:** Menyortir pesanan berdasarkan **nominal harga** (*termurah ke termahal*) atau berdasarkan **waktu transaksi** (*kronologis pagi ke malam*).
-3. **Pencarian Kilat (Audit):** Menemukan seluruh pesanan dengan nominal harga tertentu (misal: mencari transaksi bernilai Rp15.000) tanpa harus menyisir ratusan ribu baris satu per satu.
-
-### 5.2. Desain Struktur Data & Algoritma Backend (`backend/m3_laporan.py`)
-
-1. **`insertion_sort(data, key_func, reverse=False)` (Algoritma Utama)**:
-   - Bekerja secara *in-place* dengan menyisipkan elemen satu per satu ke posisi yang tepat pada bagian array yang sudah terurut.
-   - **Adaptif:** Jika data sudah hampir terurut, pergeseran berhenti lebih cepat sehingga kompleksitas waktu mendekati **$O(n)$** linier.
-   - Sesuai aturan dosen, diimplementasikan manual tanpa `sorted()` atau `.sort()`.
-
-2. **`selection_sort` dan `bubble_sort` (Algoritma Pembanding)**:
-   - Disediakan untuk memenuhi kompetensi silabus *"penerapan berbagai macam jenis sort"* dan diintegrasikan ke dalam fitur **Duel Sorting M3**.
-   - `selection_sort`: Memindai nilai minimum pada sisa array, mengoptimalkan jumlah pertukaran memori (*minimum swaps* tepat $n$ kali).
-   - `bubble_sort`: Menggeser elemen secara berpasangan dari kiri ke kanan.
-
-3. **`binary_search(data, target_val, key_func)`**:
-   - Membagi ruang pencarian menjadi dua bagian ($n/2, n/4, \dots$) pada setiap langkah komparasi.
-   - Memangkas waktu pencarian dari $O(n)$ menjadi **$O(\log n)$**. Pada 1.000 data, pencarian selesai dalam maksimal **10 langkah komparasi** ($\log_2 1.000 \approx 9.96$).
-   - Dilengkapi pemindaian multi-match untuk mengumpulkan semua pesanan dengan nominal harga yang sama.
-
-4. **`class LaporanManager`**:
-   - Orkestrator pembuatan laporan finansial: menyaring subset batch pesanan, mengeksekusi sorting, menghitung statistik keuangan (total omset, rata-rata, min, max), dan membandingkan performa Binary Search vs Linear Search.
-
-### 5.3. Hasil Uji Tanding Algoritma Sorting (Duel Benchmark 500 Data)
-
-Pengujian dilakukan secara riil menggunakan dataset pesanan pada mesin lokal:
-
+### 5.2. Hasil Uji Tanding Sorting M3 (500 Data)
 ```text
 =================================================================================
 |               HASIL UJI TANDING ALGORITMA SORTING M3 (500 DATA)               |
@@ -279,123 +119,63 @@ Pengujian dilakukan secara riil menggunakan dataset pesanan pada mesin lokal:
 =================================================================================
 ```
 
-#### Pembahasan Analitis Sorting M3:
-1. **Insertion Sort Tercepat:** Memiliki efisiensi praktis tertinggi karena pergeseran inner loop langsung berhenti begitu posisi elemen yang tepat tercapai (*early termination*).
-2. **Selection Sort:** Jumlah komparasinya selalu konstan $\frac{n(n-1)}{2}$, namun sangat unggul ketika biaya operasi tulis/swap ke memori mahal karena hanya melakukan pertukaran tepat $n$ kali.
-3. **Bubble Sort Paling Lambat:** Menukar dua elemen bersebelahan secara berulang menghasilkan overhead instruksi CPU terbesar.
-
-### 5.4. Pembuktian Empiris: Binary Search O(log n) vs Linear Search O(n)
-
-Pencarian target harga Rp15.000 pada laporan terurut 1.000 data:
-
-```text
-=================================================================================
-|            HASIL PENCARIAN LAPORAN: BINARY SEARCH vs LINEAR SEARCH            |
-+----------------------+--------------------+-----------------+-----------------+
-| Algoritma Pencarian  | Langkah Komparasi  | Durasi Eksekusi | Akselerasi      |
-+----------------------+--------------------+-----------------+-----------------+
-| Binary Search        |          1 langkah |       0.0316 ms | ~1.7x Lebih Cepat|
-| Linear Search        |        449 langkah |       0.0541 ms | Baseline O(n)   |
-+----------------------+--------------------+-----------------+-----------------+
-=================================================================================
-* Catatan: Sebanyak 79 pesanan ditemukan memiliki nominal persis Rp15.000.
-```
-
-### 5.5. Tabel Analisis Kompleksitas Asimtotik (Big-O) M3
-
-| Operasi / Algoritma | Best Case | Average Case | Worst Case | Kompleksitas Memori | Keterangan Mekanisme |
-| :--- | :---: | :---: | :---: | :---: | :--- |
-| **Insertion Sort** | $O(n)$ | $O(n^2)$ | $O(n^2)$ | $O(1)$ in-place | Adaptif jika data hampir terurut |
-| **Selection Sort** | $O(n^2)$ | $O(n^2)$ | $O(n^2)$ | $O(1)$ in-place | Komparasi tetap, swap minimal |
-| **Bubble Sort** | $O(n)$ | $O(n^2)$ | $O(n^2)$ | $O(1)$ in-place | Lambat akibat banyak swap |
-| **Linear Search** | $O(1)$ | $O(n)$ | $O(n)$ | $O(1)$ | Tidak butuh data terurut |
-| **Binary Search** | $O(1)$ | $O(\log n)$ | $O(\log n)$ | $O(1)$ | **Wajib data terurut sempurna** |
+### 5.3. Pembuktian Binary Search vs Linear Search (Target Rp15.000 pada 1.000 Data)
+| Algoritma Pencarian | Langkah Komparasi | Durasi Eksekusi | Kompleksitas |
+| :--- | :---: | :---: | :---: |
+| **Binary Search** | **1 langkah** | **0.0316 ms** | **$O(\log n)$** |
+| **Linear Search** | 449 langkah | 0.0541 ms | $O(n)$ |
 
 ---
 
 ## 6. Antarmuka Pengguna (Desktop GUI Tkinter)
 
-Antarmuka dibangun menggunakan Python Tkinter standar dengan rancangan 3-panel sesuai halaman 4 dokumen spesifikasi:
-1. **Panel Kiri (Sidebar Navigasi):**
-   - Tombol pemuatan data CSV (200.000 data).
-   - Menu operasi Array (Lihat, Tambah Reguler/Prioritas/VIP, Hapus).
-   - Menu operasi Linked List (Lihat, Tambah Reguler/Prioritas/VIP, Hapus).
-   - Tombol **⚡ Uji Tanding Array vs LL** untuk benchmark simultan.
-   - Menu operasi Antrean & Undo M2 (Status Antrean FIFO, Enqueue, Layani Berikutnya, Undo).
-   - Menu operasi Laporan & Sorting M3 (Laporan Terurut, Cari di Laporan Binary Search, **⚡ Duel Sorting M3**).
-   - Penampung placeholder menu M4-M6 yang dinonaktifkan.
-2. **Panel Kanan (Form Input & View Hasil):**
-   - Form input parameter dinamis sesuai menu yang dipilih.
-   - Area tampilan teks hasil lengkap dengan visualisasi slot antrean, ringkasan omset, dan tabel perbandingan.
-3. **Panel Bawah (Command & Benchmark Log):**
-   - Konsol terminal monospace gelap yang mencatat setiap aksi beserta durasi eksekusi dalam milidetik ($ms$).
+Antarmuka dibangun dengan Python Tkinter standar melalui layout 3 panel:
+1. **Panel Kiri (Sidebar Navigasi):** Memuat data CSV, menu operasi M1 (Array vs LinkList), M2 (Antrean FIFO & Undo), serta M3 (Laporan Terurut, Binary Search, dan Duel Sorting).
+2. **Panel Kanan (Form Parameter & Detail Hasil):** Input parameter dinamis serta area tampilan teks hasil dengan border monospace ASCII 81-karakter yang rapi.
+3. **Panel Bawah (Command & Benchmark Log):** Konsol terminal yang mencatat riwayat pemanggilan fungsi dan stopwatch eksekusi ($ms$).
 
 ---
 
 ## 7. Galeri Tangkapan Layar (Screenshots)
 
-> *Petunjuk: Simpan gambar tangkapan layar antarmuka aplikasimu di folder `docs/screenshots/` (atau ubah tautan di bawah ini sesuai nama file gambarmu).*
-
-### A. Tampilan Utama Aplikasi & Menu Navigasi
-<!-- Simpan file screenshot di: docs/screenshots/01_ui_utama.png -->
+### A. Tampilan Utama Aplikasi
 ![Tampilan Utama Aplikasi 2EZ4U](docs/screenshots/01_ui_utama.png)
-*Gambar 1: Tata letak antarmuka 3-panel saat aplikasi pertama kali dijalankan.*
 
-### B. Proses Pemuatan 200.000 Data Pesanan CSV
-<!-- Simpan file screenshot di: docs/screenshots/02_load_data.png -->
+### B. Pemuatan 200.000 Data CSV
 ![Pemuatan 200.000 Data CSV](docs/screenshots/02_load_data.png)
-*Gambar 2: Data 200.000 baris pesanan berhasil dimuat ke dalam Array dan Linked List secara simultan.*
 
-### C. Eksekusi Operasi Penyisipan Pesanan VIP (M1)
-<!-- Simpan file screenshot di: docs/screenshots/03_tambah_vip.png -->
+### C. Operasi Penyisipan Pesanan VIP (M1)
 ![Eksekusi Tambah Pesanan VIP](docs/screenshots/03_tambah_vip.png)
-*Gambar 3: Penyisipan pesanan VIP di urutan terdepan dan pencatatan waktu eksekusinya.*
 
-### D. Hasil Uji Tanding Performa (Benchmark Duel: Array vs Linked List)
-<!-- Simpan file screenshot di: docs/screenshots/04_duel_benchmark.png -->
+### D. Uji Tanding Array vs Linked List (M1)
 ![Hasil Uji Tanding Performa](docs/screenshots/04_duel_benchmark.png)
-*Gambar 4: Tabel perbandingan performa langsung antara Array vs Linked List pada data 200.000 baris.*
 
-### E. Status Antrean Dapur & Fitur Undo (M2)
-<!-- Simpan file screenshot di: docs/screenshots/05_antrean_undo.png -->
+### E. Status Antrean Dapur & Undo (M2)
 ![Status Antrean Dapur dan Fitur Undo](docs/screenshots/05_antrean_undo.png)
-*Gambar 5: Visualisasi Antrean Melingkar (Circular Queue FIFO) dan Tumpukan Riwayat Aksi (Stack LIFO Undo).*
 
-### F. Rekapitulasi Laporan Harian Terurut & Binary Search (M3)
-<!-- Simpan file screenshot di: docs/screenshots/06_laporan_m3.png -->
+### F. Laporan Terurut & Binary Search (M3)
 ![Laporan Harian Terurut dan Binary Search](docs/screenshots/06_laporan_m3.png)
-*Gambar 6: Laporan keuangan terurut dengan Insertion Sort dan pencarian cepat Binary Search.*
 
 ---
 
-## 8. Petunjuk Instalasi & Cara Menjalankan
+## 8. Petunjuk Instalasi & Menjalankan
 
-### Prasyarat Sistem
-* Python versi 3.11 atau yang lebih baru.
-* Sistem Operasi: Windows / macOS / Linux.
-* Library bawaan: `tkinter` (sudah termasuk dalam instalasi standar Python).
+### Prasyarat
+* Python 3.11 atau lebih baru.
+* Library standar `tkinter` (bawaan instalasi Python).
 
-### Langkah Menjalankan Aplikasi
-1. **Clone repository ini ke komputer lokal:**
+### Langkah Menjalankan
+1. Clone repositori:
    ```bash
    git clone https://github.com/Jsooonx/2ez4u.git
    cd 2ez4u
    ```
-
-2. **Pastikan file dataset tersedia di folder `data/`:**
-   - `data/pesanan.csv` (200.000 baris)
-   - `data/peta.csv`
-
-3. **Jalankan aplikasi utama:**
+2. Pastikan file `data/pesanan.csv` dan `data/peta.csv` tersedia di folder `data/`.
+3. Jalankan aplikasi utama:
    ```bash
    python app.py
    ```
-
-4. **Pengujian Aplikasi:**
-   - Klik tombol **Load CSV (200.000)** pada panel kiri atas.
-   - Uji M1: Jalankan operasi `ARRAY - LIHAT PESANAN`, `LINKEDLIST - TAMBAH VIP`, atau tombol **⚡ UJI TANDING ARRAY vs LL**.
-   - Uji M2: Klik **M2 - ANTREAN FIFO (Status)**, coba tombol **M2 - LAYANI BERIKUTNYA**, lalu batalkan dengan **M2 - UNDO AKSI TERAKHIR**.
-   - Uji M3: Klik **M3 - LAPORAN TERURUT (Sort)**, uji pencarian dengan **M3 - CARI DI LAPORAN**, atau jalankan **⚡ DUEL SORTING (M3)**.
+4. Klik **Load CSV (200.000)** di sidebar kiri atas, lalu jalankan pengujian operasi M1, M2, atau M3.
 
 ---
 
@@ -403,31 +183,32 @@ Antarmuka dibangun menggunakan Python Tkinter standar dengan rancangan 3-panel s
 
 ```text
 2ez4u/
-├── .gitignore               <- Konfigurasi pengabaian cache, dataset, dan filter docs
-├── README.md                <- Laporan utama proyek dan dokumentasi repositori
-├── app.py                   <- Entry point utama peluncur aplikasi ("python app.py")
+├── .gitignore
+├── README.md
+├── app.py
 ├── backend/
-│   ├── __init__.py          <- Inisialisasi package backend
+│   ├── __init__.py
 │   ├── m1_pesanan.py        <- [M1] Model Pesanan, Dynamic Array, & Linked List
 │   ├── m2_antrean.py        <- [M2] Circular Queue FIFO, Stack LIFO, & AntreanManager
 │   └── m3_laporan.py        <- [M3] Insertion Sort, Selection Sort, Bubble Sort, & Binary Search
 ├── data/                    <- Direktori dataset (diabaikan dari Git)
-│   ├── pesanan.csv          <- 200.000 data pesanan
-│   └── peta.csv             <- Data titik peta antarkampus
+│   ├── pesanan.csv
+│   └── peta.csv
 ├── docs/
-│   ├── README-Proyek-2EZ4U.pdf      <- Panduan resmi tugas akhir dari dosen
-│   ├── penjelasan_proyek_dan_m1.md  <- Dokumentasi catatan teori & konsep M1
-│   ├── penjelasan_m2.md             <- Dokumentasi catatan teori & konsep M2
-│   ├── penjelasan_m3.md             <- Dokumentasi catatan teori & konsep M3
-│   └── screenshots/                 <- Tempat penyimpanan file tangkapan layar UI
+│   ├── README-Proyek-2EZ4U.pdf      <- Panduan resmi tugas akhir
+│   ├── penjelasan_proyek_dan_m1.md  <- Catatan teori M1
+│   ├── penjelasan_m2.md             <- Catatan teori M2
+│   ├── penjelasan_m3.md             <- Catatan teori M3
+│   └── screenshots/                 <- Tangkapan layar antarmuka
 └── frontend/
-    ├── __init__.py          <- Inisialisasi package frontend
-    └── ui.py                <- [UI] Antarmuka desktop Tkinter 3-panel & stopwatch benchmark
+    ├── __init__.py
+    └── ui.py                <- Antarmuka desktop Tkinter 3-panel
 ```
 
 ---
 
 ## 10. Kesimpulan Proyek (M1, M2, & M3)
-1. **Milestone 1:** Membuktikan bahwa tidak ada satu struktur data tunggal yang sempurna. Array unggul mutlak dalam akses acak indeks ($O(1)$ vs $O(n)$), sedangkan Linked List unggul mutlak dalam penyisipan di posisi terdepan ($O(1)$ vs $O(n)$).
-2. **Milestone 2:** Membuktikan bahwa Circular Queue memecahkan inefisiensi array biasa untuk antrean FIFO, memungkinkan `enqueue` dan `dequeue` instan $O(1)$ tanpa pergeseran memori berkat modulo aritmetika. Sementara itu, Stack melengkapi sistem dengan mekanisme Undo berbasis LIFO $O(1)$ yang elegan.
-3. **Milestone 3:** Membuktikan bahwa data yang terurut membuka kemampuan akselerasi pencarian eksponensial melalui Binary Search ($O(\log n)$) dibandingkan Linear Search ($O(n)$). Di antara algoritma kuadratik $O(n^2)$, Insertion Sort terbukti paling adaptif dan efisien untuk pemrosesan laporan harian.
+
+1. **M1 (Array vs Linked List):** Array unggul mutlak dalam akses acak memori ($O(1)$ vs $O(n)$), sementara Linked List unggul mutlak dalam penyisipan di posisi terdepan ($O(1)$ vs $O(n)$).
+2. **M2 (Circular Queue & Stack):** Circular Queue memecahkan inefisiensi array biasa untuk antrean FIFO ($O(1)$ tanpa pergeseran memori via modulo), sementara Stack memfasilitasi fitur Undo kasir berbasis LIFO $O(1)$.
+3. **M3 (Sorting & Binary Search):** Pengurutan data membuka akselerasi pencarian eksponensial melalui Binary Search ($O(\log n)$ dibanding Linear Search $O(n)$). Di antara algoritma kuadratik, Insertion Sort terbukti paling adaptif dan efisien.
