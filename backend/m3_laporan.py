@@ -1,7 +1,31 @@
 # Milestone 3: Laporan Terurut & Binary Search
 
 import time
-from backend.m1_pesanan import Pesanan
+
+
+class HasilCari:
+    # Wadah hasil perbandingan Binary Search vs Linear Search (pengganti dict)
+    __slots__ = ('found_idx', 'steps_bs', 'durasi_bs_ms', 'steps_ls', 'durasi_ls_ms', 'matches', 'total_data')
+
+    def __init__(self, found_idx, steps_bs, durasi_bs_ms, steps_ls, durasi_ls_ms, matches, total_data):
+        self.found_idx = found_idx
+        self.steps_bs = steps_bs
+        self.durasi_bs_ms = durasi_bs_ms
+        self.steps_ls = steps_ls
+        self.durasi_ls_ms = durasi_ls_ms
+        self.matches = matches
+        self.total_data = total_data
+
+
+class HasilDuel:
+    # Wadah hasil duel 3 algoritma sorting (pengganti dict)
+    __slots__ = ('limit', 'durasi_ins_ms', 'durasi_sel_ms', 'durasi_bub_ms')
+
+    def __init__(self, limit, durasi_ins_ms, durasi_sel_ms, durasi_bub_ms):
+        self.limit = limit
+        self.durasi_ins_ms = durasi_ins_ms
+        self.durasi_sel_ms = durasi_sel_ms
+        self.durasi_bub_ms = durasi_bub_ms
 
 
 def insertion_sort(data, key_func=None, reverse=False):
@@ -30,16 +54,18 @@ def selection_sort(data, key_func=None, reverse=False):
     n = len(data)
     for i in range(n - 1):
         target_idx = i
+        val_target = key_func(data[i]) if key_func else data[i]
         for j in range(i + 1, n):
             val_j = key_func(data[j]) if key_func else data[j]
-            val_target = key_func(data[target_idx]) if key_func else data[target_idx]
 
             if not reverse:
                 if val_j < val_target:
                     target_idx = j
+                    val_target = val_j
             else:
                 if val_j > val_target:
                     target_idx = j
+                    val_target = val_j
 
         if target_idx != i:
             data[i], data[target_idx] = data[target_idx], data[i]
@@ -220,15 +246,7 @@ class LaporanManager:
         t1_ls = time.perf_counter()
         durasi_ls_ms = (t1_ls - t0_ls) * 1000.0
 
-        return {
-            "found_idx": idx_bs,
-            "steps_bs": steps_bs,
-            "durasi_bs_ms": durasi_bs_ms,
-            "steps_ls": steps_ls,
-            "durasi_ls_ms": durasi_ls_ms,
-            "matches": matches,
-            "total_data": len(self.data_laporan)
-        }
+        return HasilCari(idx_bs, steps_bs, durasi_bs_ms, steps_ls, durasi_ls_ms, matches, len(self.data_laporan))
 
     def duel_sort(self, array_sumber, limit=500, sort_by="harga"):
         # Duel 3 algoritma sorting
@@ -250,9 +268,4 @@ class LaporanManager:
         bubble_sort(list_bub, key_func=kunci)
         durasi_bub_ms = (time.perf_counter() - t0) * 1000.0
 
-        return {
-            "limit": limit,
-            "durasi_ins_ms": durasi_ins_ms,
-            "durasi_sel_ms": durasi_sel_ms,
-            "durasi_bub_ms": durasi_bub_ms
-        }
+        return HasilDuel(limit, durasi_ins_ms, durasi_sel_ms, durasi_bub_ms)

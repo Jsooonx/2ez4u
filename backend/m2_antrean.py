@@ -1,7 +1,6 @@
 # Milestone 2: Antrean Dapur (Circular Queue) & Fitur Undo (Stack)
 
 import time
-from backend.m1_pesanan import Pesanan
 
 
 class CircularQueue:
@@ -67,6 +66,9 @@ class CircularQueue:
 
         self.front = (self.front - 1 + self.capacity) % self.capacity
         self.data[self.front] = item
+        if self.size == 0:
+            # Antrean kosong: elemen tunggal ini juga menjadi elemen paling belakang
+            self.rear = self.front
         self.size += 1
 
     def unqueue_rear(self):

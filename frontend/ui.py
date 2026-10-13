@@ -13,8 +13,23 @@ from tkinter import messagebox, ttk
 from tkinter.scrolledtext import ScrolledText
 
 from backend.m1_pesanan import Array, LinkList, Pesanan, muat_pesanan_csv
-from backend.m2_antrean import AntreanManager, CircularQueue, Stack, AksiUndo
-from backend.m3_laporan import LaporanManager, insertion_sort, selection_sort, bubble_sort, binary_search, linear_search
+from backend.m2_antrean import AntreanManager
+from backend.m3_laporan import LaporanManager
+
+
+class Warna:
+    # Palet warna aplikasi (pakai atribut, bukan dict)
+    bg_main = "#f4f6f9"
+    sidebar_bg = "#ffffff"
+    sidebar_border = "#dcdfe6"
+    header_bg = "#1e293b"
+    accent_blue = "#2563eb"
+    accent_green = "#16a34a"
+    accent_amber = "#d97706"
+    accent_red = "#dc2626"
+    terminal_bg = "#0f172a"
+    terminal_fg = "#38bdf8"
+    terminal_dim = "#94a3b8"
 
 
 class AppUI:
@@ -47,23 +62,11 @@ class AppUI:
         self.set_mode("ARRAY_LIHAT")
 
     def _setup_styles(self):
-        self.colors = {
-            "bg_main": "#f4f6f9",
-            "sidebar_bg": "#ffffff",
-            "sidebar_border": "#dcdfe6",
-            "header_bg": "#1e293b",
-            "accent_blue": "#2563eb",
-            "accent_green": "#16a34a",
-            "accent_amber": "#d97706",
-            "accent_red": "#dc2626",
-            "terminal_bg": "#0f172a",
-            "terminal_fg": "#38bdf8",
-            "terminal_dim": "#94a3b8",
-        }
+        self.colors = Warna
 
     def _create_layout(self):
         # Frame utama pembagi atas (kiri & kanan) dan bawah (terminal command)
-        self.root.configure(bg=self.colors["bg_main"])
+        self.root.configure(bg=self.colors.bg_main)
 
         # PanedWindow vertikal memisahkan (Area Kerja Atas) dan (Command Log Bawah)
         main_pane = ttk.PanedWindow(self.root, orient=tk.VERTICAL)
@@ -87,14 +90,14 @@ class AppUI:
         self._build_command_panel(main_pane)
 
     def _build_sidebar(self, parent):
-        sidebar_frame = tk.Frame(parent, bg=self.colors["sidebar_bg"], width=280, relief=tk.SOLID, bd=1)
+        sidebar_frame = tk.Frame(parent, bg=self.colors.sidebar_bg, width=280, relief=tk.SOLID, bd=1)
         sidebar_frame.pack_propagate(False)
         parent.add(sidebar_frame, weight=1)
 
         # Scrollable canvas untuk sidebar agar muat di semua ukuran layar
-        canvas = tk.Canvas(sidebar_frame, bg=self.colors["sidebar_bg"], highlightthickness=0)
+        canvas = tk.Canvas(sidebar_frame, bg=self.colors.sidebar_bg, highlightthickness=0)
         scrollbar = ttk.Scrollbar(sidebar_frame, orient=tk.VERTICAL, command=canvas.yview)
-        scrollable_content = tk.Frame(canvas, bg=self.colors["sidebar_bg"])
+        scrollable_content = tk.Frame(canvas, bg=self.colors.sidebar_bg)
 
         scrollable_content.bind(
             "<Configure>",
@@ -116,7 +119,7 @@ class AppUI:
         btn_load.pack(fill=tk.X, padx=10, pady=(2, 4))
         
         self.lbl_data_status = tk.Label(
-            scrollable_content, text="Status: Data belum dimuat", bg=self.colors["sidebar_bg"],
+            scrollable_content, text="Status: Data belum dimuat", bg=self.colors.sidebar_bg,
             fg="#64748b", font=("Segoe UI", 8), anchor="w"
         )
         self.lbl_data_status.pack(fill=tk.X, padx=12, pady=(0, 8))
@@ -125,7 +128,7 @@ class AppUI:
         self._add_section_header(scrollable_content, "M1 - DATA PESANAN")
 
         # Sub-header Array
-        lbl_arr = tk.Label(scrollable_content, text="— LARIK (ARRAY) —", bg=self.colors["sidebar_bg"], fg="#475569", font=("Segoe UI", 8, "bold"), anchor="w")
+        lbl_arr = tk.Label(scrollable_content, text="— LARIK (ARRAY) —", bg=self.colors.sidebar_bg, fg="#475569", font=("Segoe UI", 8, "bold"), anchor="w")
         lbl_arr.pack(fill=tk.X, padx=10, pady=(4, 2))
 
         self._add_menu_btn(scrollable_content, "ARRAY - LIHAT PESANAN", lambda: self.set_mode("ARRAY_LIHAT"))
@@ -135,7 +138,7 @@ class AppUI:
         self._add_menu_btn(scrollable_content, "ARRAY - HAPUS PESANAN", lambda: self.set_mode("ARRAY_HAPUS"))
 
         # Sub-header Linked List
-        lbl_ll = tk.Label(scrollable_content, text="— RANTAI (LINKED LIST) —", bg=self.colors["sidebar_bg"], fg="#475569", font=("Segoe UI", 8, "bold"), anchor="w")
+        lbl_ll = tk.Label(scrollable_content, text="— RANTAI (LINKED LIST) —", bg=self.colors.sidebar_bg, fg="#475569", font=("Segoe UI", 8, "bold"), anchor="w")
         lbl_ll.pack(fill=tk.X, padx=10, pady=(8, 2))
 
         self._add_menu_btn(scrollable_content, "LINKEDLIST - LIHAT PESANAN", lambda: self.set_mode("LL_LIHAT"))
@@ -200,18 +203,18 @@ class AppUI:
         btn.pack(fill=tk.X, padx=10, pady=1)
 
     def _build_work_area(self, parent):
-        work_frame = tk.Frame(parent, bg=self.colors["bg_main"], padx=16, pady=12)
+        work_frame = tk.Frame(parent, bg=self.colors.bg_main, padx=16, pady=12)
         parent.add(work_frame, weight=3)
 
         # Header Info Aksi
         self.lbl_action_title = tk.Label(
-            work_frame, text="Operasi Terpilih", bg=self.colors["bg_main"],
+            work_frame, text="Operasi Terpilih", bg=self.colors.bg_main,
             fg="#0f172a", font=("Segoe UI", 13, "bold"), anchor="w"
         )
         self.lbl_action_title.pack(fill=tk.X, pady=(0, 2))
 
         self.lbl_action_desc = tk.Label(
-            work_frame, text="Pilih operasi dari menu di sebelah kiri.", bg=self.colors["bg_main"],
+            work_frame, text="Pilih operasi dari menu di sebelah kiri.", bg=self.colors.bg_main,
             fg="#64748b", font=("Segoe UI", 9), anchor="w"
         )
         self.lbl_action_desc.pack(fill=tk.X, pady=(0, 12))
@@ -229,7 +232,7 @@ class AppUI:
 
         # Tombol Eksekusi Aksi
         self.btn_execute = tk.Button(
-            self.form_frame, text="JALANKAN OPERASI", bg=self.colors["accent_blue"],
+            self.form_frame, text="JALANKAN OPERASI", bg=self.colors.accent_blue,
             fg="white", font=("Segoe UI", 9, "bold"), relief=tk.FLAT, padx=16, pady=5,
             cursor="hand2", command=self.execute_current_action
         )
@@ -249,15 +252,15 @@ class AppUI:
         self.txt_result.pack(fill=tk.BOTH, expand=True)
 
     def _build_command_panel(self, parent):
-        cmd_frame = tk.Frame(parent, bg=self.colors["terminal_bg"], padx=10, pady=6)
+        cmd_frame = tk.Frame(parent, bg=self.colors.terminal_bg, padx=10, pady=6)
         parent.add(cmd_frame, weight=2)
 
-        header_bar = tk.Frame(cmd_frame, bg=self.colors["terminal_bg"])
+        header_bar = tk.Frame(cmd_frame, bg=self.colors.terminal_bg)
         header_bar.pack(fill=tk.X, pady=(0, 4))
 
         lbl_cmd = tk.Label(
-            header_bar, text="COMMAND & BENCHMARK LOG", bg=self.colors["terminal_bg"],
-            fg=self.colors["terminal_fg"], font=("Consolas", 9, "bold")
+            header_bar, text="COMMAND & BENCHMARK LOG", bg=self.colors.terminal_bg,
+            fg=self.colors.terminal_fg, font=("Consolas", 9, "bold")
         )
         lbl_cmd.pack(side=tk.LEFT)
 
@@ -269,7 +272,7 @@ class AppUI:
         btn_clear_log.pack(side=tk.RIGHT)
 
         self.txt_command_log = ScrolledText(
-            cmd_frame, bg=self.colors["terminal_bg"], fg="#e2e8f0",
+            cmd_frame, bg=self.colors.terminal_bg, fg="#e2e8f0",
             font=("Consolas", 9), relief=tk.FLAT, height=6
         )
         self.txt_command_log.pack(fill=tk.BOTH, expand=True)
@@ -316,7 +319,7 @@ class AppUI:
             self.lbl_action_desc.config(
                 text="Menghapus pesanan pada posisi ke-i. (Array: O(n) geser elemen | Linked List: O(n) traversal pointer)."
             )
-            self.btn_execute.config(text="HAPUS PESANAN", bg=self.colors["accent_red"])
+            self.btn_execute.config(text="HAPUS PESANAN", bg=self.colors.accent_red)
 
             tk.Label(self.form_fields_container, text="Indeks yang Ingin Dihapus:", bg="white", font=("Segoe UI", 9)).grid(row=0, column=0, sticky="w", pady=4)
             self.entry_index = ttk.Entry(self.form_fields_container, width=20)
@@ -340,7 +343,7 @@ class AppUI:
 
             self.lbl_action_title.config(text=f"{struct_name} - TAMBAH PESANAN {jenis}")
             self.lbl_action_desc.config(text=desc)
-            self.btn_execute.config(text=f"TAMBAH {jenis.split()[0]}", bg=self.colors["accent_green"])
+            self.btn_execute.config(text=f"TAMBAH {jenis.split()[0]}", bg=self.colors.accent_green)
 
             # Form fields
             labels = ["Nama Pelanggan:", "Restoran:", "Menu:", "Harga (Rp):"]
@@ -361,7 +364,7 @@ class AppUI:
             self.lbl_action_desc.config(
                 text="Melihat kondisi antrean dapur terkini (Front, Rear, Kapasitas) dan riwayat Stack Undo."
             )
-            self.btn_execute.config(text="🔄 REFRESH STATUS ANTREAN", bg=self.colors["accent_blue"])
+            self.btn_execute.config(text="🔄 REFRESH STATUS ANTREAN", bg=self.colors.accent_blue)
             lbl_info = tk.Label(
                 self.form_fields_container,
                 text="Klik tombol di samping untuk menyegarkan visualisasi antrean melingkar & tumpukan undo.",
@@ -375,7 +378,7 @@ class AppUI:
             self.lbl_action_desc.config(
                 text="Memasukkan pesanan ke antrean dapur. Menambah di belakang antrean dalam O(1)."
             )
-            self.btn_execute.config(text="📥 ENQUEUE KE DAPUR", bg=self.colors["accent_green"])
+            self.btn_execute.config(text="📥 ENQUEUE KE DAPUR", bg=self.colors.accent_green)
 
             tk.Label(self.form_fields_container, text="Pilih dari Data Pesanan (Indeks):", bg="white", font=("Segoe UI", 9, "bold")).grid(row=0, column=0, sticky="w", pady=2)
             self.entry_m2_idx = ttk.Entry(self.form_fields_container, width=15)
@@ -467,7 +470,7 @@ class AppUI:
 
             # Inisialisasi antrean dapur M2 dengan 10 pesanan pertama dari CSV jika masih kosong
             if self.antrean_mgr.queue.is_empty():
-                for k in range(min(10, len(self.array_pesanan))):
+                for k in range(10 if len(self.array_pesanan) > 10 else len(self.array_pesanan)):
                     p_seed = self.array_pesanan.get(k)
                     p_copy = Pesanan(
                         oid=p_seed.oid, pelanggan=p_seed.pelanggan, resto=p_seed.resto,
@@ -928,7 +931,7 @@ class AppUI:
         ]
 
         lines.append("--- 10 DATA PERTAMA (TERENDAH / PALING AWAL) ---")
-        for i in range(min(10, n)):
+        for i in range(10 if n > 10 else n):
             lines.append(f"  {i + 1:2d}. {daftar[i].ringkasan()}")
 
         if n > 15:
@@ -936,7 +939,7 @@ class AppUI:
             lines.append(f"      ... [terdapat {n - 15} data lainnya yang terurut sempurna] ...")
             lines.append("")
             lines.append("--- 5 DATA TERAKHIR (TERTINGGI / PALING AKHIR) ---")
-            for i in range(max(10, n - 5), n):
+            for i in range(n - 5 if n - 5 > 10 else 10, n):
                 lines.append(f"  {i + 1:2d}. {daftar[i].ringkasan()}")
 
         report = "\n".join(lines)
@@ -954,20 +957,20 @@ class AppUI:
 
         kunci_nama = "Harga Rp" if self.laporan_mgr.kunci_terakhir == "harga" else "Waktu Masuk detik ke-"
         title = "HASIL PENCARIAN LAPORAN: BINARY SEARCH vs LINEAR SEARCH"
-        found = res["found_idx"] != -1
+        found = res.found_idx != -1
 
         lines = [
             d_sep,
             "|" + title.center(w - 2) + "|",
             sep,
             box_line(f"Target Pencarian   : {kunci_nama}{target_val:,}"),
-            box_line(f"Total Ruang Data   : {res['total_data']:,} data pesanan terurut"),
-            box_line(f"Status Ditemukan   : {'YA (Ditemukan di indeks ' + str(res['found_idx']) + ')' if found else 'TIDAK DITEMUKAN'}"),
-            box_line(f"Jumlah Match Cocok : {len(res['matches'])} pesanan"),
+            box_line(f"Total Ruang Data   : {res.total_data:,} data pesanan terurut"),
+            box_line(f"Status Ditemukan   : {'YA (Ditemukan di indeks ' + str(res.found_idx) + ')' if found else 'TIDAK DITEMUKAN'}"),
+            box_line(f"Jumlah Match Cocok : {len(res.matches)} pesanan"),
             sep,
             box_line("PERBANDINGAN EFISIENSI PENCARIAN:"),
-            box_line(f"  1. BINARY SEARCH  : {res['steps_bs']} langkah komparasi (O(log n)) | {res['durasi_bs_ms']:.4f} ms"),
-            box_line(f"  2. LINEAR SEARCH  : {res['steps_ls']} langkah komparasi (O(n))     | {res['durasi_ls_ms']:.4f} ms"),
+            box_line(f"  1. BINARY SEARCH  : {res.steps_bs} langkah komparasi (O(log n)) | {res.durasi_bs_ms:.4f} ms"),
+            box_line(f"  2. LINEAR SEARCH  : {res.steps_ls} langkah komparasi (O(n))     | {res.durasi_ls_ms:.4f} ms"),
             sep,
             d_sep,
             ""
@@ -975,10 +978,10 @@ class AppUI:
 
         if found:
             lines.append("--- PESANAN COCOK (Menampilkan hingga 8 pesanan pertama) ---")
-            for i, p in enumerate(res["matches"][:8]):
+            for i, p in enumerate(res.matches[:8]):
                 lines.append(f"  {i + 1:2d}. {p.ringkasan()}")
-            if len(res["matches"]) > 8:
-                lines.append(f"      ... dan {len(res['matches']) - 8} pesanan lainnya dengan nilai yang sama.")
+            if len(res.matches) > 8:
+                lines.append(f"      ... dan {len(res.matches) - 8} pesanan lainnya dengan nilai yang sama.")
         else:
             lines.append(f"Tidak ada pesanan dengan {kunci_nama}{target_val:,} di laporan ini.")
 
@@ -1012,9 +1015,9 @@ class AppUI:
             sep,
             hdr_row,
             sep,
-            row("Insertion Sort", f"{res['durasi_ins_ms']:.4f} ms", "O(n^2)", "Tercepat (Adaptive)"),
-            row("Selection Sort", f"{res['durasi_sel_ms']:.4f} ms", "O(n^2)", "Stabil Min Swap"),
-            row("Bubble Sort", f"{res['durasi_bub_ms']:.4f} ms", "O(n^2)", "Banyak Swap"),
+            row("Insertion Sort", f"{res.durasi_ins_ms:.4f} ms", "O(n^2)", "Tercepat (Adaptive)"),
+            row("Selection Sort", f"{res.durasi_sel_ms:.4f} ms", "O(n^2)", "Stabil Min Swap"),
+            row("Bubble Sort", f"{res.durasi_bub_ms:.4f} ms", "O(n^2)", "Banyak Swap"),
             sep,
             d_sep,
             "",
@@ -1029,7 +1032,7 @@ class AppUI:
         report = "\n".join(lines)
         self.txt_result.delete("1.0", tk.END)
         self.txt_result.insert(tk.END, report)
-        self.log_command(f"M3 - Duel Sort: Insertion {res['durasi_ins_ms']:.4f}ms | Selection {res['durasi_sel_ms']:.4f}ms | Bubble {res['durasi_bub_ms']:.4f}ms")
+        self.log_command(f"M3 - Duel Sort: Insertion {res.durasi_ins_ms:.4f}ms | Selection {res.durasi_sel_ms:.4f}ms | Bubble {res.durasi_bub_ms:.4f}ms")
 
 
 def main():

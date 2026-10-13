@@ -1,3 +1,7 @@
+import csv
+import time
+
+
 class Pesanan:
     # Pake slots supaya hemat RAM
     __slots__ = (
@@ -195,9 +199,7 @@ class LinkList:
 
 def muat_pesanan_csv(filepath, limit=None):
     # Baca file CSV pesanan dan masukkan ke Array & LinkList
-    import csv
-    import time
-
+    # Baris yang rusak (kolom kurang / angka tidak valid) dilewati
     arr = Array(capacity=8)
     ll = LinkList()
 
@@ -206,23 +208,17 @@ def muat_pesanan_csv(filepath, limit=None):
 
     with open(filepath, mode='r', encoding='utf-8', newline='') as f:
         reader = csv.reader(f)
-        header = next(reader, None)
+        next(reader, None)  # lewati header
 
         for row in reader:
-            if not row or len(row) < 9:
+            if len(row) < 9:
                 continue
 
-            p = Pesanan(
-                oid=row[0],
-                pelanggan=row[1],
-                resto=row[2],
-                menu=row[3],
-                harga=row[4],
-                prioritas=row[5],
-                t_masuk_detik=row[6],
-                t_selesai_detik=row[7],
-                status=row[8]
-            )
+            try:
+                p = Pesanan(row[0], row[1], row[2], row[3], row[4], row[5], row[6], row[7], row[8])
+            except ValueError:
+                continue
+
             arr.append(p)
             ll.append(p)
             count += 1
@@ -230,6 +226,5 @@ def muat_pesanan_csv(filepath, limit=None):
             if limit is not None and count >= limit:
                 break
 
-    t_selesai = time.perf_counter()
-    durasi = t_selesai - t_mulai
+    durasi = time.perf_counter() - t_mulai
     return arr, ll, durasi, count
