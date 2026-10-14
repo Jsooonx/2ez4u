@@ -690,7 +690,7 @@ class AppUI:
                 res_search = self.laporan_mgr.cari_laporan(target_val)
                 self.log_command(
                     f"M3 - Binary Search ({self.laporan_mgr.kunci_terakhir} = {target_val:,})",
-                    res_search["durasi_bs_ms"]
+                    res_search.durasi_bs_ms
                 )
                 self._render_m3_search_result(target_val, res_search)
 
