@@ -2,7 +2,7 @@
 
 > **Mata Kuliah:** Struktur Data & Analisa Algoritma (EC234303) - FTEIC ITS (Gasal 2026/2027)
 > **Dosen:** Ir. Arta Kusuma Hernanda, S.T., M.T. | **Mahasiswa:** M. Gielang Fitrawan Mukhlish (5024251019) - Kelas A
-> **Repo:** `https://github.com/Jsooonx/2ez4u.git` | **Video Demo:** [Tautan Video Demo]
+> **Repo:** `https://github.com/Jsooonx/2ez4u.git`
 
 ## 1. Deskripsi
 
@@ -14,11 +14,18 @@ Simulasi engine backend layanan pesan-antar makanan yang menguji struktur data b
 ```mermaid
 flowchart LR
     CSV[("data/pesanan.csv<br>200.000 baris")] --> M1
-    subgraph Backend
-        M1["M1 Array + LinkList"] --> M2["M2 CircularQueue + Stack Undo"]
-        M1 --> M3["M3 Sorting + Binary Search"]
+
+    subgraph Backend ["Backend Engine"]
+        M1["M1: Array & LinkList"]
+        M2["M2: Circular Queue & Stack"]
+        M3["M3: Sorting & Binary Search"]
+        M1 --> M2
+        M1 --> M3
     end
-    M1 & M2 & M3 --> UI["frontend/ui.py<br>Tkinter 3-panel"]
+
+    M1 --> UI["frontend/ui.py<br>Tkinter 3-panel"]
+    M2 --> UI
+    M3 --> UI
     UI --> APP["app.py"]
 ```
 
@@ -59,16 +66,10 @@ Prioritas pesanan menentukan posisi sisip: Reguler (belakang), Prioritas (tengah
 
 ## 3. Antarmuka (Tkinter 3-panel)
 
-Menu operasi (kiri), form & hasil (kanan), log perintah + waktu ms (bawah).
-
-| Skenario | Screenshot |
-| :--- | :--- |
-| Tampilan utama | ![UI Utama](docs/screenshots/01_ui_utama.png) |
-| Load 200.000 CSV | ![Load CSV](docs/screenshots/02_load_data.png) |
-| Tambah VIP (M1) | ![Tambah VIP](docs/screenshots/03_tambah_vip.png) |
-| Duel Array vs Linked List (M1) | ![Duel M1](docs/screenshots/04_duel_benchmark.png) |
-| Antrean & Undo (M2) | ![Antrean M2](docs/screenshots/05_antrean_undo.png) |
-| Laporan & Binary Search (M3) | ![Laporan M3](docs/screenshots/06_laporan_m3.png) |
+Aplikasi desktop GUI dibangun menggunakan `tkinter` dengan tata letak 3-panel terintegrasi:
+* **Panel Kiri (Sidebar Navigasi):** Memuat data CSV 200.000 baris, tombol operasi M1 (Array vs Linked List), operasi M2 (Antrean Dapur & Undo), operasi M3 (Laporan Terurut & Pencarian), serta tombol pintas duel benchmark.
+* **Panel Kanan (Form Parameter Dinamis & Display):** Menampilkan input parameter form yang adaptif terhadap pilihan menu serta area hasil luaran berformat ASCII terstruktur (81 karakter).
+* **Panel Bawah (Command & Benchmark Log):** Terminal log pencatat setiap aksi yang baru saja dieksekusi lengkap dengan stopwatch waktu presisi tinggi (`time.perf_counter()`) dalam satuan milidetik (ms).
 
 ## 4. Menjalankan
 
@@ -87,7 +88,7 @@ Klik **Load CSV (200.000)** di sidebar, lalu pilih operasi M1, M2, atau M3. Butu
 ├── backend/               <- m1_pesanan.py, m2_antrean.py, m3_laporan.py
 ├── frontend/ui.py         <- Layout 3-panel Tkinter
 ├── data/                  <- pesanan.csv, peta.csv
-└── docs/                  <- Penjelasan teknis M1-M3 & screenshots
+└── docs/                  <- Panduan komprehensif & dokumentasi teknis M1-M3
 ```
 
 ## 6. Kesimpulan (M1 - M3)
